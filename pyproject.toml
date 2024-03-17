@@ -1,0 +1,17 @@
+[tool.poetry]
+name = "pp-at1"
+version = "0.1.0"
+description = "Python Programming Assignment"
+authors = ["Martin Neloe <Martin.A.Neloe@student.edu.au>"]
+readme = "README.md"
+packages = [{include = "pp_at1"}]
+
+[tool.poetry.dependencies]
+python = "^3.9"
+pandas = "2.0.1"
+beautifulsoup4 = "^4.12.3"
+
+
+[build-system]
+requires = ["poetry-core"]
+build-backend = "poetry.core.masonry.api"
