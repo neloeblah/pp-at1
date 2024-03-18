@@ -20,8 +20,9 @@ class MainApp(tk.Frame):
         tk.Frame.__init__(self, parent)
         self.parent = parent
         self.parent.geometry("400x300")
-
+        self.parent.title("News Aggregator")
         self.statusbar = StatusBar(parent)
+
         self.statusbar.pack(side=tk.BOTTOM, fill=tk.X)
 
 
