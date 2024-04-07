@@ -8,8 +8,10 @@ packages = [{include = "pp_at1"}]
 
 [tool.poetry.dependencies]
 python = "^3.9"
-pandas = "2.0.1"
+pandas = "^2.2.1"
 beautifulsoup4 = "^4.12.3"
+ipykernel = "^6.29.4"
+requests = "^2.31.0"
 
 
 [build-system]
