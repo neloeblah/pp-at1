@@ -10,20 +10,20 @@ class MenuFrame(tk.Frame):
         self.pack(side=tk.LEFT, fill=tk.BOTH, expand=True)
         
         # API Key
-        self.key_label = tk.Label(self, text="Enter NewsAPI api key:", bg=self.bg_color, fg=self.text_color)
-        self.key_label.pack()
+        self.key_label = tk.Label(self, text="NewsAPI api key:", bg=self.bg_color, fg=self.text_color)
+        self.key_label.pack(pady=(10, 5))
         self.key_entry = tk.Entry(self)
         self.key_entry.pack()
 
         # Search Query
         self.query_label = tk.Label(self, text="Search query:", bg=self.bg_color, fg=self.text_color)
-        self.query_label.pack()
+        self.query_label.pack(pady=(10, 5))
         self.query_entry = tk.Entry(self)
         self.query_entry.pack()
 
         # Category options
         self.category_label = tk.Label(self, text="Select Categories:", bg=self.bg_color, fg=self.text_color)
-        self.category_label.pack()
+        self.category_label.pack(pady=(20, 5))
 
         self.create_category_menu()
         
