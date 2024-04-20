@@ -1,5 +1,7 @@
 import tkinter as tk
 
+from tkinter import ttk
+
 class MenuFrame(tk.Frame):
     def __init__(self, root, update_callback):
         self.bg_color = "#27212E"
@@ -26,7 +28,10 @@ class MenuFrame(tk.Frame):
         self.category_label.pack(pady=(20, 5))
 
         self.create_category_menu()
-        
+
+        # Country options
+        self.create_country_menu()
+
     def create_category_menu(self):
         categories = ['business', 'entertainment', 'general', 'health', 'science', 'sports', 'technology']
         check_buttons = []
@@ -42,7 +47,24 @@ class MenuFrame(tk.Frame):
 
         self.check_buttons = check_buttons
         self.check_vars = check_vars
-        
+
+    def create_country_menu(self):
+        self.country_label = tk.Label(self, text="Select Country:", bg=self.bg_color, fg=self.text_color)
+        self.country_label.pack(pady=(20, 5))
+
+        options = ["", 
+            'ae', 'ar', 'at', 'au', 'be', 'bg', 'br', 'ca', 'ch', 'cn', 'co', 'cu', 'cz', 'de',
+            'eg', 'fr', 'gb', 'gr', 'hk', 'hu', 'id', 'ie', 'il', 'in', 'it', 'jp', 'kr', 'lt', 
+            'lv', 'ma', 'mx', 'my', 'ng', 'nl', 'no', 'nz', 'ph', 'pl', 'pt', 'ro', 'rs', 'ru', 
+            'sa', 'se', 'sg', 'si', 'sk', 'th', 'tr', 'tw', 'ua', 'us', 've', 'za'
+        ]
+
+        country_var = tk.StringVar()
+        country_var.set(options[0])
+
+        self.country_menu = ttk.Combobox(self, width=5, textvariable=country_var, values=options)
+        self.country_menu.pack()
+
 
 class ContentFrame(tk.Frame):
     def __init__(self, root):
