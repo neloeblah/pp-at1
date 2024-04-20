@@ -9,31 +9,40 @@ class Scraper:
         self.url = url
         self.html = None
         self.page = None
-        self.ad_count = None
-        self.script_count = None
         self.socials = []
-        self.author = None
-        self.section = None
-        self.keywords = None
 
     def make_request(self):
         if self.url != "https://removed.com":
-            self.html = requests.get(self.url)
-            self.page = BeautifulSoup(self.html.content, "html.parser")
-    
+            try:
+                self.html = requests.get(self.url)
+                self.page = BeautifulSoup(self.html.content, "html.parser")
+            except requests.RequestException as e:
+                print(f"Error making request: {e}")
+
+    def check_status(self):
+        if not self.html:
+            return -1
+        return self.html.status_code
+
     def count_adverts(self):
-        if self.html.status_code == 403:
+        status_code = self.handle_request_errors()
+        if status_code == 403:
+            # Specify if site scraping is blocked instead of an error.
             self.ad_count = -1
         elif self.html.status_code == 200:
+            # Search for ad tags
             pattern = re.compile(r"_ad|-ad|advert|adwrap|^ad-|^ad_", re.IGNORECASE)
             ads = self.page.find_all('div', class_=lambda c: c and pattern.search(c))
 
             self.ad_count = len(ads)
         
     def count_scripts(self, script_type="hidead"):
-        if self.html.status_code == 403:
+        status_code = self.handle_request_errors()
+        if status_code == 403:
+            # Specify if site scraping is blocked instead of an error.
             self.script_count = -1
-        elif self.html.status_code == 200:
+        elif status_code == 200:
+            # Search for script tags
             scripts = self.page.find_all('script')
 
             self.script_count = 0
@@ -43,6 +52,7 @@ class Scraper:
                     self.script_count += 1
 
     def extract_content(self, prop=None, attrs=None):
+        tag = None
         if prop:
             tag = self.page.find('meta', property=prop)
         elif attrs:
@@ -59,7 +69,7 @@ class Scraper:
         if ld:
             extract = json.loads(ld.string)
             
-            if type(extract) == list: 
+            if isinstance(extract, list): 
                 extract = extract[0]
 
             self.author = extract.get("author", None)  # dictionary keys: @type, name, sameAs, url, description
@@ -74,7 +84,7 @@ class Scraper:
         if not fb_id:
             fb_pages = self.extract_content(prop="fb:pages")
         
-            if fb_pages.count(",") == 0:
+            if fb_pages and fb_pages.count(",") == 0:
                 fb_id = fb_pages
         
         # Add to socials if available
@@ -107,12 +117,21 @@ class Scraper:
         self.get_mastodon()
 
     def __str__(self):
+        if getattr(self, 'ad_count', 0) == -1:
+            ads = "Site blocked"
+        else:
+            ads = getattr(self, 'ad_count', 0) + getattr(self, 'script_count', 0)
+        socials = ", ".join(self.socials)
+
         text = "URL: " + self.url + "\n"
-        ads = self.ad_count + self.script_count
         text += "Ads: " + str(ads) + "\n"
-        text += "Socials: " + ", ".join(self.socials) + "\n"
-        text += "Author details: " + str(self.author) + "\n"
-        text += "News Section: " + str(self.section) + "\n"
-        text += "Keywords: " + str(self.keywords) + "\n"
+        text += "Socials: " + socials + "\n"
+
+        author = getattr(self, 'author', None)
+        text += "Author details: " + str(author) + "\n"
+        section = getattr(self, 'section', None)
+        text += "News Section: " + str(section) + "\n"
+        keywords = getattr(self, 'keywords', None)
+        text += "Keywords: " + str(keywords) + "\n"
         
         return text
