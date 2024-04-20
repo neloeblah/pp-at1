@@ -55,15 +55,19 @@ class ContentFrame(tk.Frame):
 
 
 class MainApp:
-    __apikey = ""
+    __api_key = ""
 
     def __init__(self, root):
         self.root = root
         self.root.geometry("600x600")
         self.root.title("News Aggregator")
 
+        # Menu
         self.left_frame = MenuFrame(root, self.update_category_selections)
         self.left_frame.pack_propagate(False)
+        self.left_frame.key_entry.bind("<Return>", self.set_api_key)
+
+        # Content
         self.right_frame = ContentFrame(root)
         self.right_frame.pack_propagate(False)
 
@@ -71,6 +75,10 @@ class MainApp:
         self.category_label = tk.Label(self.right_frame, text="")
         self.update_category_selections()
         self.category_label.pack()
+
+    def set_api_key(self, event):
+        MainApp.__api_key = self.left_frame.key_entry.get()
+        self.left_frame.key_entry.delete(0, tk.END)
 
     def update_category_selections(self):
         options = [str(var.get()) for var in self.left_frame.check_vars if var.get()]
