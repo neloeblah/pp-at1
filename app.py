@@ -25,10 +25,10 @@ class DropMenu:
         self.label.pack(pady=self.pady)
 
     def create_menu(self):
-        option_var = tk.StringVar()
-        option_var.set(self.options[0])
+        self.option_var = tk.StringVar()
+        self.option_var.set(self.options[0])
 
-        self.menu = ttk.Combobox(self.root, width=self.width, textvariable=option_var, values=self.options)
+        self.menu = ttk.Combobox(self.root, width=self.width, textvariable=self.option_var, values=self.options)
         self.menu.pack()
 
 class MenuFrame(tk.Frame):
@@ -140,6 +140,17 @@ class MainApp:
         self.update_category_selections()
         self.category_label.pack()
 
+        # Display country/Language
+        var = self.left_frame.country_menu.option_var.get()
+        self.country_label = tk.Label(self.right_frame, text=f"Country: {var}")
+        self.country_label.pack()
+        self.left_frame.country_menu.menu.bind('<<ComboboxSelected>>', self.update_combobox_selection)
+        
+        var = self.left_frame.language_menu.option_var.get()
+        self.language_label = tk.Label(self.right_frame, text=f"Language: {var}")
+        self.language_label.pack()
+        self.left_frame.language_menu.menu.bind('<<ComboboxSelected>>', self.update_combobox_selection)        
+
     def set_api_key(self, event):
         MainApp.__api_key = self.left_frame.key_entry.get()
         self.left_frame.key_entry.delete(0, tk.END)
@@ -148,6 +159,20 @@ class MainApp:
         options = [str(var.get()) for var in self.left_frame.check_vars if var.get()]
         self.category_label.config(text="Selected options: " + ", ".join(options))
 
+    def update_menu_selection(self, label, text, vars):
+        if isinstance(vars, list):
+            selections = [str(v.get()) for v in vars if v.get()]
+            select_str = ", ".join(selections)
+        else:
+            select_str = vars.get()
+        label.config(text=text + select_str)
+    
+    def update_combobox_selection(self, event):
+        country_var = self.left_frame.country_menu.option_var.get()
+        self.country_label.config(text=f"Country: {country_var}")
+
+        language_var = self.left_frame.language_menu.option_var.get()
+        self.language_label.config(text=f"Language: {language_var}")
 
 def main():
     root = tk.Tk()
