@@ -2,6 +2,35 @@ import tkinter as tk
 
 from tkinter import ttk
 
+COUNTRY_OPTIONS = ['ae', 'ar', 'at', 'au', 'be', 'bg', 'br', 'ca', 'ch', 'cn', 'co', 'cu', 'cz', 'de',
+                   'eg', 'fr', 'gb', 'gr', 'hk', 'hu', 'id', 'ie', 'il', 'in', 'it', 'jp', 'kr', 'lt', 
+                   'lv', 'ma', 'mx', 'my', 'ng', 'nl', 'no', 'nz', 'ph', 'pl', 'pt', 'ro', 'rs', 'ru', 
+                    'sa', 'se', 'sg', 'si', 'sk', 'th', 'tr', 'tw', 'ua', 'us', 've', 'za']
+LANGUAGE_OPTIONS = ['ar', 'de', 'en', 'es', 'fr', 'he', 'it', 'nl', 'no', 'pt', 'ru', 'sv', 'ud', 'zh']
+CATEGORY_OPTIONS = ['business', 'entertainment', 'general', 'health', 'science', 'sports', 'technology']
+
+class DropMenu:
+    def __init__(self, root, text, options, pady=(20,5), width=5):
+        self.root = root
+        self.text = text
+        self.options = options
+        self.width = width
+        self.pady = pady
+
+        # Add default option to dropdown choices
+        self.options.insert(0, "")
+
+    def create_label(self):
+        self.label = tk.Label(self.root, text=self.text, bg=self.root.bg_color, fg=self.root.text_color)
+        self.label.pack(pady=self.pady)
+
+    def create_menu(self):
+        option_var = tk.StringVar()
+        option_var.set(self.options[0])
+
+        self.menu = ttk.Combobox(self.root, width=self.width, textvariable=option_var, values=self.options)
+        self.menu.pack()
+
 class MenuFrame(tk.Frame):
     def __init__(self, root, update_callback):
         self.bg_color = "#27212E"
@@ -29,11 +58,16 @@ class MenuFrame(tk.Frame):
 
         self.create_category_menu()
 
-        # Country options
-        self.create_country_menu()
+        # Dropdown menus for country and language
+        self.country_menu = DropMenu(self, text="Select Country:", options=COUNTRY_OPTIONS)
+        self.language_menu = DropMenu(self, text="Select Language:", options=LANGUAGE_OPTIONS)
+        
+        for menu in [self.country_menu, self.language_menu]:
+            menu.create_label()
+            menu.create_menu()
 
     def create_category_menu(self):
-        categories = ['business', 'entertainment', 'general', 'health', 'science', 'sports', 'technology']
+        categories = CATEGORY_OPTIONS
         check_buttons = []
         check_vars = []
 
@@ -52,18 +86,24 @@ class MenuFrame(tk.Frame):
         self.country_label = tk.Label(self, text="Select Country:", bg=self.bg_color, fg=self.text_color)
         self.country_label.pack(pady=(20, 5))
 
-        options = ["", 
-            'ae', 'ar', 'at', 'au', 'be', 'bg', 'br', 'ca', 'ch', 'cn', 'co', 'cu', 'cz', 'de',
-            'eg', 'fr', 'gb', 'gr', 'hk', 'hu', 'id', 'ie', 'il', 'in', 'it', 'jp', 'kr', 'lt', 
-            'lv', 'ma', 'mx', 'my', 'ng', 'nl', 'no', 'nz', 'ph', 'pl', 'pt', 'ro', 'rs', 'ru', 
-            'sa', 'se', 'sg', 'si', 'sk', 'th', 'tr', 'tw', 'ua', 'us', 've', 'za'
-        ]
-
+        options = [""] + COUNTRY_OPTIONS
         country_var = tk.StringVar()
         country_var.set(options[0])
 
         self.country_menu = ttk.Combobox(self, width=5, textvariable=country_var, values=options)
         self.country_menu.pack()
+
+    def create_language_menu(self):
+        self.language_label = tk.Label(self, text="Select Language:", bg=self.bg_color, fg=self.text_color)
+        self.language_label.pack(pady=(20, 5))
+
+        options = [""] + LANGUAGE_OPTIONS
+
+        language_var = tk.StringVar()
+        language_var.set(options[0])
+
+        self.language_menu = ttk.Combobox(self, width=5, textvariable=language_var, values=options)
+        self.language_menu.pack()
 
 
 class ContentFrame(tk.Frame):
