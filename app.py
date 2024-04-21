@@ -158,14 +158,6 @@ class MainApp:
     def update_category_selections(self):
         options = [str(var.get()) for var in self.left_frame.check_vars if var.get()]
         self.category_label.config(text="Selected options: " + ", ".join(options))
-
-    def update_menu_selection(self, label, text, vars):
-        if isinstance(vars, list):
-            selections = [str(v.get()) for v in vars if v.get()]
-            select_str = ", ".join(selections)
-        else:
-            select_str = vars.get()
-        label.config(text=text + select_str)
     
     def update_combobox_selection(self, event):
         country_var = self.left_frame.country_menu.option_var.get()
