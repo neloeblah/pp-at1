@@ -32,9 +32,9 @@ class DropMenu:
         self.menu.pack()
 
 class MenuFrame(tk.Frame):
-    def __init__(self, root, update_callback):
-        self.bg_color = "#27212E"
-        self.text_color = "#FFFFFF"
+    def __init__(self, root, bg_color, text_color, update_callback):
+        self.bg_color = bg_color
+        self.text_color = text_color
         self.update_callback = update_callback
         
         tk.Frame.__init__(self, root, width=200, highlightbackground="black", highlightthickness=1, bg=self.bg_color)
@@ -107,8 +107,9 @@ class MenuFrame(tk.Frame):
 
 
 class ContentFrame(tk.Frame):
-    def __init__(self, root):
-        bg_color = "#FFF1C8"
+    def __init__(self, root, bg_color, text_color):
+        self.bg_color = bg_color
+        self.text_color = text_color
         tk.Frame.__init__(self, root, width=400, highlightbackground="black", highlightthickness=1, bg=bg_color)
         self.pack(side=tk.RIGHT, fill=tk.BOTH, expand=True)
         
@@ -125,12 +126,13 @@ class MainApp:
         self.root.title("News Aggregator")
 
         # Menu
-        self.left_frame = MenuFrame(root, self.update_category_selections)
+        self.left_frame = MenuFrame(root, bg_color="#27212E", text_color="#FFFFFF", 
+                                    update_callback=self.update_category_selections)
         self.left_frame.pack_propagate(False)
         self.left_frame.key_entry.bind("<Return>", self.set_api_key)
 
         # Content
-        self.right_frame = ContentFrame(root)
+        self.right_frame = ContentFrame(root, bg_color="#FFF1C8", text_color="#000000")
         self.right_frame.pack_propagate(False)
 
         # Show selections
