@@ -2,13 +2,17 @@ import datetime
 import requests
 
 class News():
+    __api_key = "3b8c7e9d0e2c43a7bc2083b63ec7b313"
     base_url = "https://newsapi.org"
     valid_params = {"apiKey", "q", "searchIn", "sources", "domains", "excludeDomains", "from", "to", "language", "sortBy", "pageSize", "page"}
 
-    def __init__(self, api_key):
+    def __init__(self, api_key=None):
+        if api_key:
+            News.__api_key = api_key
+
         # Encapsulate params to hide API Key
         self.__params = {
-            "apiKey": api_key
+            "apiKey": News.__api_key
         }
         self.end_point = "/v2/everything"
 
@@ -159,7 +163,7 @@ class TopHeadlines(News):
     valid_params = {"apiKey", "sources", "category", "country", "q", "pageSize", "page"}
     exclusive_params = {"sources", "category", "country"}
 
-    def __init__(self, api_key):
+    def __init__(self, api_key=None):
         super().__init__(api_key)
         self.end_point = "/v2/top-headlines"
 
@@ -175,7 +179,7 @@ class TopHeadlines(News):
 class Sources(News):
     valid_params = {"apiKey", "q", "searchIn", "sources", "excludeDomains", "from", "to", "language", "sortBy", "pageSize", "page"}
 
-    def __init__(self, api_key):
+    def __init__(self, api_key=None):
         super().__init__(api_key)
         self.end_point = '/v2/top-headlines/sources'
 
