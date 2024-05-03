@@ -2,6 +2,9 @@ import tkinter as tk
 
 from tkinter import ttk
 from newsapi import News, TopHeadlines
+from PIL import ImageTk, Image
+import io
+import requests
 
 COUNTRY_OPTIONS = ['ae', 'ar', 'at', 'au', 'be', 'bg', 'br', 'ca', 'ch', 'cn', 'co', 'cu', 'cz', 'de',
                    'eg', 'fr', 'gb', 'gr', 'hk', 'hu', 'id', 'ie', 'il', 'in', 'it', 'jp', 'kr', 'lt', 
@@ -193,6 +196,8 @@ class MainApp:
 
     def display_results(self):
         self.display = {}
+        self.image = {}
+        self.text = {}
         count = 0
 
         #for article in self.cached_results["articles"][:10]:
@@ -206,17 +211,43 @@ class MainApp:
             {'source': {'id': 'abc-news-au', 'name': 'ABC News (AU)'}, 'author': 'ABC News', 'title': "Joel Embiid fights Bell's palsy to drop NBA playoff career high as Sixers down Knicks", 'description': 'Philadelphia 76ers star Joel Embiid went to the doctors complaining of a migraine prior to the playoffs, only for the diagnosis to be something more sinister that impacts how he looks on the court.', 'url': 'https://www.abc.net.au/news/2024-04-26/nba-playoffs-joel-embiid-bells-palsy-sixers-knicks-game-3/103773714', 'urlToImage': 'https://live-production.wcms.abc-cdn.net.au/d8406c6fa93bfc53f1dd55f9976d5d2a?impolicy=wcms_watermark_news&cropH=2531&cropW=4500&xPos=0&yPos=338&width=862&height=485&imformat=generic', 'publishedAt': '2024-04-26T05:28:24Z', 'content': "<ul><li>In short:\xa0Joel Embiid has been diagnosed with Bell's palsy, a form of facial paralysis, after initially complaining of migraines prior to the NBA playoffs.</li><li>Embiid battled through the … [+2061 chars]"},
         ]
         for article in articles:
-            self.display[f"article_{count}"] = tk.Label(
-                self.right_frame,
-                text=article.get("title", None),
-                anchor="w",
-                justify="left",
-                width=100,
-                wraplength=700
-            )
-            self.display[f"article_{count}"].pack(pady=(10, 5))
-            count += 1
+            if article['source']['name'] != '[Removed]':
 
+                url = article.get("urlToImage", None)
+                u = requests.get(url)
+                img = Image.open(io.BytesIO(u.content))
+                img = img.resize((128, 128))
+                self.image[f"article_{count}"] = ImageTk.PhotoImage(img)
+
+                # with urlopen(url) as u:
+                #     raw_data = u.content
+                #     image = Image.open(io.BytesIO(raw_data))
+                #     img = ImageTk.PhotoImage(image)
+
+                self.display[f"article_{count}"] = tk.Label(
+                    self.right_frame,
+                    # text=article.get("urlToImage", None),
+                    image=self.image[f"article_{count}"],
+                    width=100,
+                    height=100,
+                    anchor="w",
+                    # justify="left",
+                    # width=100,
+                    # wraplength=700
+                )
+                self.display[f"article_{count}"].pack(side=tk.LEFT, pady=(10, 5))
+                self.text[f"article_{count}"] = tk.Label(
+                    self.right_frame,
+                    text=article.get("title", None),
+                    width=100,
+                    # justify="left",
+                    # width=100,
+                    # wraplength=700
+                )
+                self.text[f"article_{count}"].pack(side=tk.RIGHT)
+
+                #self.display[f"article_{count}"].config(image=image, width=image.width(), height=image.height())
+                count += 1
 
 def main():
     root = tk.Tk()
