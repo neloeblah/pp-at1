@@ -127,14 +127,13 @@ class MainApp:
         self.cached = {}
         self.page = 0
 
-        
+        ##### Frames layout
         self.nav = tk.Frame(self.root)
         self.nav.pack(side=tk.TOP)
         self.display = tk.Frame(self.root)
         self.display.pack()
-
         
-        ##### Nav Buttons
+        ##### Navigation
         # Styling
         style = ttk.Style()
         style.configure('W.TButton', font=('calibri', 10, 'bold', 'underline'))
