@@ -12,6 +12,9 @@ pandas = "^2.2.1"
 beautifulsoup4 = "^4.12.3"
 ipykernel = "^6.29.4"
 requests = "^2.31.0"
+pillow = "^10.3.0"
+plotly = "^5.22.0"
+nbformat = "^5.10.4"
 
 
 [build-system]
