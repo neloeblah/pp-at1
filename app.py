@@ -126,8 +126,11 @@ class MenuFrame(tk.Frame):
 
 
 class articleGroup:
-    def __init__(self, root, row, url, title, description, author, source, timestamp, img_url, wrap_len):
+    def __init__(self, root, bg_color, spacing_color, row, url, title, description, author, 
+                 source, timestamp, img_url, wrap_len):
         self.root = root
+        self.bg_color = bg_color,
+        self.spacing_color = spacing_color
         self.row = row
         self.url = url
         self.title = title
@@ -146,6 +149,10 @@ class articleGroup:
         self.create_source()
         self.create_timestamp()
 
+        # Formtting
+        self.spacing = tk.Label(self.root, text="", anchor="w", justify="left", bg=self.spacing_color)
+        self.spacing.grid(row=self.row+3, column=0, columnspan=4, sticky='nsew')
+
     def create_thumbnail(self):
         # Download image
         u = requests.get(self.img_url)
@@ -157,7 +164,7 @@ class articleGroup:
 
         # GUI img label
         self.img_label = tk.Label(self.root, image=self.img)
-        self.img_label.grid(row=self.row, column=0, rowspan=3, sticky='nsew')
+        self.img_label.grid(row=self.row, column=0, rowspan=4, sticky='nsew')
         self.img_label.image = self.img
 
     def create_news_title(self):
@@ -172,7 +179,7 @@ class articleGroup:
             webbrowser.open_new_tab(url)
 
         # GUI label
-        self.title_label = tk.Label(self.root, text=title, anchor="w", justify="left",
+        self.title_label = tk.Label(self.root, text=title, anchor="w", justify="left", bg=self.bg_color,
                                     font='Helvetica 10 bold underline', cursor="hand2")
         self.title_label.grid(row=self.row, column=1, columnspan=3, sticky='nsew', pady=(5, 0))
         self.title_label.bind("<ButtonRelease-1>", lambda e: web_callback(self.url))
@@ -183,16 +190,16 @@ class articleGroup:
         text = re.sub(pattern, '', self.description)
 
         # GUI label
-        self.description_label = tk.Label(self.root, text=text, anchor="w", justify="left", wraplength=self.wrap_len)
+        self.description_label = tk.Label(self.root, text=text, bg=self.bg_color, anchor="w", justify="left", wraplength=self.wrap_len)
         self.description_label.grid(row=self.row+1, column=1, columnspan=3, sticky='nsew')
 
     def create_author(self):
         text = f"Author: {self.author}"
-        self.author_label = tk.Label(self.root, text=text, anchor="w", justify="left")
+        self.author_label = tk.Label(self.root, text=text, bg=self.bg_color, anchor="w", justify="left")
         self.author_label.grid(row=self.row+2, column=1, sticky='nsew')
 
     def create_source(self):
-        self.source_label = tk.Label(self.root, text=self.source, anchor="w", justify="left")
+        self.source_label = tk.Label(self.root, text=self.source, bg=self.bg_color, anchor="w", justify="left")
         self.source_label.grid(row=self.row+2, column=2, sticky='nsew')
 
     def create_timestamp(self):
@@ -209,7 +216,7 @@ class articleGroup:
         text = f"Published: {ts}"
 
         # GUI Label
-        self.timestamp_label = tk.Label(self.root, text=text, anchor="w", justify="left")
+        self.timestamp_label = tk.Label(self.root, text=text, bg=self.bg_color, anchor="w", justify="left")
         self.timestamp_label.grid(row=self.row+2, column=3, sticky='nsew')
 
 
@@ -220,7 +227,7 @@ class ContentFrame(tk.Frame):
         self.text_color = text_color
         self.cached = {}
         self.page = 0
-        self.page_len = 10
+        self.page_len = 5
         tk.Frame.__init__(self, root, width=800, highlightbackground="black", highlightthickness=1, bg=bg_color)
         self.pack(side=tk.RIGHT, fill=tk.BOTH, expand=True)
         
@@ -258,7 +265,7 @@ class ContentFrame(tk.Frame):
 
         # Set up first set of results
         self.cached[self.page] = tk.Frame(self.root)
-        self.add_article_elements(target=self.cached[self.page], articles=self.data[:self.wrap_len])
+        self.add_article_elements(target=self.cached[self.page], articles=self.data[:self.page_len])
         self.cached[self.page].pack(in_=self.display)
 
     def add_article_elements(self, target, articles):
@@ -273,7 +280,9 @@ class ContentFrame(tk.Frame):
                 self.articles[counter] = articleGroup(
                     #root=self.content_frame,
                     root=target,
-                    row=3*counter,
+                    bg_color="#FFF8E4",
+                    spacing_color=self.bg_color,
+                    row=4*counter,
                     url=a.get('url', None),
                     title=a.get('title', None),
                     description=a.get('content', None),
@@ -351,7 +360,7 @@ class MainApp:
 
     def __init__(self, root):
         self.root = root
-        self.root.geometry("1000x600")
+        self.root.geometry("1000x700")
         self.root.title("News Aggregator")
         self.news = None
         self.cached_results = None
