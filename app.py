@@ -25,6 +25,8 @@ TEST_ARTICLES = [
             {'source': {'id': 'cbs-news', 'name': 'CBS News'}, 'author': 'Meredith Gordon', 'title': 'How to watch the OKC Thunder vs. New Orleans Pelicans NBA Playoffs game tonight: Game 3 livestream options, more', 'description': "Here's how and when to watch Game 3 of the OKC Thunder vs. New Orleans Pelicans NBA Playoffs series.", 'url': 'https://www.cbsnews.com/essentials/how-to-watch-todays-okc-thunder-vs-new-orleans-pelicans-nba-playoffs-game-3/', 'urlToImage': 'https://assets3.cbsnewsstatic.com/hub/i/r/2024/04/26/85e98138-3298-4ec7-a1a7-e5030b12aa2d/thumbnail/1200x630/a5861ab2092c404f418cfb7687dd2d1c/gettyimages-2150073262-1.jpg?v=63c131a0051f3823d92b0d1dffb5e0e4', 'publishedAt': '2024-04-27T04:10:19+00:00', 'content': 'Oklahoma City Thunder players react from the bench after a three-pointer during game two of the first round of the NBA playoffs against the New Orleans Pelicans at Paycom Center on April 24, 2024 in … [+8574 chars]'}, 
             {'source': {'id': 'abc-news-au', 'name': 'ABC News (AU)'}, 'author': 'ABC News', 'title': "Joel Embiid fights Bell's palsy to drop NBA playoff career high as Sixers down Knicks", 'description': 'Philadelphia 76ers star Joel Embiid went to the doctors complaining of a migraine prior to the playoffs, only for the diagnosis to be something more sinister that impacts how he looks on the court.', 'url': 'https://www.abc.net.au/news/2024-04-26/nba-playoffs-joel-embiid-bells-palsy-sixers-knicks-game-3/103773714', 'urlToImage': 'https://live-production.wcms.abc-cdn.net.au/d8406c6fa93bfc53f1dd55f9976d5d2a?impolicy=wcms_watermark_news&cropH=2531&cropW=4500&xPos=0&yPos=338&width=862&height=485&imformat=generic', 'publishedAt': '2024-04-26T05:28:24Z', 'content': "<ul><li>In short:\xa0Joel Embiid has been diagnosed with Bell's palsy, a form of facial paralysis, after initially complaining of migraines prior to the NBA playoffs.</li><li>Embiid battled through the … [+2061 chars]"},
         ]
+TEST_ARTICLES = TEST_ARTICLES + TEST_ARTICLES[::-1]
+TEST_ARTICLES = TEST_ARTICLES * 2
 
 class DropMenu:
     def __init__(self, root, text, options, pady=(20,5), width=5):
@@ -218,6 +220,7 @@ class ContentFrame(tk.Frame):
         self.text_color = text_color
         self.cached = {}
         self.page = 0
+        self.page_len = 10
         tk.Frame.__init__(self, root, width=800, highlightbackground="black", highlightthickness=1, bg=bg_color)
         self.pack(side=tk.RIGHT, fill=tk.BOTH, expand=True)
         
@@ -241,15 +244,21 @@ class ContentFrame(tk.Frame):
         self.button_back.pack(in_=self.nav, side=tk.LEFT, pady=10)
 
         # Forward button
-        self.button_next = ttk.Button(self.root, text='Next Page', style='W.TButton', command=self.next_frame, state="normal")
+        if len(TEST_ARTICLES) < self.page_len:
+            next_state = "disabled"
+        else:
+            next_state = "normal"
+        self.button_next = ttk.Button(self.root, text='Next Page', style='W.TButton', command=self.next_frame, state=next_state)
         self.button_next.pack(in_=self.nav, side=tk.RIGHT, pady=10)
 
         ##### Content
         self.wrap_len = 700
         self.articles = {}
+        self.data = [data for data in TEST_ARTICLES if data['title'] != '[Removed]']
 
+        # Set up first set of results
         self.cached[self.page] = tk.Frame(self.root)
-        self.add_article_elements(target=self.cached[self.page], articles=TEST_ARTICLES)
+        self.add_article_elements(target=self.cached[self.page], articles=self.data[:self.wrap_len])
         self.cached[self.page].pack(in_=self.display)
 
     def add_article_elements(self, target, articles):
@@ -277,22 +286,29 @@ class ContentFrame(tk.Frame):
 
                 counter +=1
 
-
     def next_frame(self):
         # Remove existing
         self.cached[self.page].pack_forget()
         
         # Create new frame if doesn't exist
         self.page += 1
+
+        # Select relevant articles from api request
+        start_idx = self.page * self.page_len
+        end_idx = min(start_idx + self.page_len, len(self.data))
+        selected_data = self.data[start_idx:end_idx]
+
+        # Cache helps performance if images have been loaded
         if self.page not in self.cached.keys():
             self.cached[self.page] = tk.Frame(self.root)
-            self.add_article_elements(self.cached[self.page], TEST_ARTICLES[::-1])
+            self.add_article_elements(self.cached[self.page], selected_data)
         
         # Pack next page
         self.cached[self.page].pack(in_=self.display)
 
+        # Disable next button if final article is reached
         self.button_back["state"] = "normal"
-        if self.page == 1:
+        if end_idx == len(self.data):
             self.button_next["state"] = "disabled"
 
     def back_frame(self):
@@ -304,7 +320,9 @@ class ContentFrame(tk.Frame):
             # Show last
             self.page -= 1
             self.cached[self.page].pack(in_=self.display)
-        
+            self.button_next["state"] = "normal"
+
+        # Disable back button if returning to start
         if self.page == 0:
             self.button_back["state"] = "disabled"
             self.button_next["state"] = "normal"
