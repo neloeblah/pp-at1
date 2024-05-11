@@ -78,8 +78,8 @@ class MenuFrame(tk.Frame):
         self.create_category_menu()
 
         # Dropdown menus for country and language
-        self.country_menu = DropMenu(self, text="Select Country:", options=COUNTRY_OPTIONS)
-        self.language_menu = DropMenu(self, text="Select Language:", options=LANGUAGE_OPTIONS)
+        self.country_menu = DropMenu(self, text="Country (optional):", options=COUNTRY_OPTIONS)
+        self.language_menu = DropMenu(self, text="Language (optional):", options=LANGUAGE_OPTIONS)
         
         for menu in [self.country_menu, self.language_menu]:
             menu.create_label()
@@ -163,7 +163,7 @@ class articleGroup:
         self.img = ImageTk.PhotoImage(img)
 
         # GUI img label
-        self.img_label = tk.Label(self.root, image=self.img)
+        self.img_label = tk.Label(self.root, image=self.img, bg=self.bg_color)
         self.img_label.grid(row=self.row, column=0, rowspan=4, sticky='nsew')
         self.img_label.image = self.img
 
@@ -181,7 +181,7 @@ class articleGroup:
         # GUI label
         self.title_label = tk.Label(self.root, text=title, anchor="w", justify="left", bg=self.bg_color,
                                     font='Helvetica 10 bold underline', cursor="hand2")
-        self.title_label.grid(row=self.row, column=1, columnspan=3, sticky='nsew', pady=(5, 0))
+        self.title_label.grid(row=self.row, column=1, columnspan=3, sticky='nsew')
         self.title_label.bind("<ButtonRelease-1>", lambda e: web_callback(self.url))
 
     def create_description(self):
@@ -228,6 +228,8 @@ class ContentFrame(tk.Frame):
         self.cached = {}
         self.page = 0
         self.page_len = 5
+        self.analytics_content = None
+        self.show_content = True
         tk.Frame.__init__(self, root, width=800, highlightbackground="black", highlightthickness=1, bg=bg_color)
         self.pack(side=tk.RIGHT, fill=tk.BOTH, expand=True)
         
@@ -257,6 +259,10 @@ class ContentFrame(tk.Frame):
             next_state = "normal"
         self.button_next = ttk.Button(self.root, text='Next Page', style='W.TButton', command=self.next_frame, state=next_state)
         self.button_next.pack(in_=self.nav, side=tk.RIGHT, pady=10)
+
+        # Analytics button
+        self.button_analytics = ttk.Button(self.root, text="Analytics", style='W.TButton', command=self.show_analytics, state="normal")
+        self.button_analytics.pack(in_=self.display, side=tk.BOTTOM, pady=10)
 
         ##### Content
         self.wrap_len = 700
@@ -354,6 +360,39 @@ class ContentFrame(tk.Frame):
         
         return ImageTk.PhotoImage(img)
 
+    def show_analytics(self):
+        if self.show_content:
+            # Remove existing content
+            self.cached[self.page].pack_forget()
+            self.button_back["state"] = "disabled"
+            self.button_next["state"] = "disabled"
+
+            # Create or show new content
+            if self.analytics_content is None:
+                self.analytics_content = tk.Label(self.root, text="TESTING")
+            self.analytics_content.pack(in_=self.display)
+
+        else:
+            # Remove existing content
+            self.analytics_content.pack_forget()
+            
+            # Show new content
+            self.cached[self.page].pack(in_=self.display)
+            if self.page == 0:
+                self.button_back["state"] = "disabled"
+            else:
+                self.button_back["state"] = "normal"
+            
+            if (self.page + 1) * self.page_len > len(self.data):
+                self.button_next["state"] = "disabled"
+            else:
+                self.button_next["state"] = "normal"
+
+        # Adjust switching options
+        self.show_content = not self.show_content
+        text = "Analytics" if self.show_content else "Back to News"
+        self.button_analytics.config(text=text)
+
 
 class MainApp:
     __api_key = ""
@@ -372,7 +411,10 @@ class MainApp:
         self.left_frame.key_entry.bind("<Return>", self.set_api_key)
 
         # API Button
-        self.left_frame.call_button = tk.Button(self.left_frame, text="Get News!", command=self.fetch_news)
+        style = ttk.Style()
+        style.configure('W.TButton', background="#27212E", font=('calibri', 10, 'bold', 'underline'))
+
+        self.left_frame.call_button = ttk.Button(self.left_frame, text='Get News', style='W.TButton', command=self.fetch_news, state="disabled")
         self.left_frame.call_button.pack(pady=(20, 5))
 
         # Content
