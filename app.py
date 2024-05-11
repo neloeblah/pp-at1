@@ -229,7 +229,7 @@ class ContentFrame(tk.Frame):
         self.page = 0
         self.page_len = 5
         self.analytics_content = None
-        self.showing = "content"
+        self.show_content = True
         tk.Frame.__init__(self, root, width=800, highlightbackground="black", highlightthickness=1, bg=bg_color)
         self.pack(side=tk.RIGHT, fill=tk.BOTH, expand=True)
         
@@ -361,23 +361,22 @@ class ContentFrame(tk.Frame):
         return ImageTk.PhotoImage(img)
 
     def show_analytics(self):
-        # TO-DO: Works switching from content to analytics only once.
-        self.cached[self.page].pack_forget()
-        self.button_back["state"] = "disabled"
-        self.button_next["state"] = "disabled"
+        if self.show_content:
+            # Remove existing content
+            self.cached[self.page].pack_forget()
+            self.button_back["state"] = "disabled"
+            self.button_next["state"] = "disabled"
 
-        if self.showing == "content":
+            # Create or show new content
             if self.analytics_content is None:
                 self.analytics_content = tk.Label(self.root, text="TESTING")
             self.analytics_content.pack(in_=self.display)
-            
-            self.button_analytics.config(text="Back to News")
-            self.showing = "analytics"
+
         else:
+            # Remove existing content
             self.analytics_content.pack_forget()
-
-            self.button_analytics.config(text="Analytics")
-
+            
+            # Show new content
             self.cached[self.page].pack(in_=self.display)
             if self.page == 0:
                 self.button_back["state"] = "disabled"
@@ -388,7 +387,13 @@ class ContentFrame(tk.Frame):
                 self.button_next["state"] = "disabled"
             else:
                 self.button_next["state"] = "normal"
-        
+
+        # Adjust switching options
+        self.show_content = not self.show_content
+        text = "Analytics" if self.show_content else "Back to News"
+        self.button_analytics.config(text=text)
+
+
 class MainApp:
     __api_key = ""
 
