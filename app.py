@@ -313,9 +313,10 @@ class GraphFrame():
             mean=self.stats["Length"].mean(),
             name="fig_source_length.png"
         )
+        self.create_line_plot()
 
         # Display plots
-        filenames = ["fig_source_count.png", "fig_source_length.png", "fig_source_count.png", "fig_source_length.png"]
+        filenames = ["fig_source_count.png", "fig_source_length.png", "fig_published_at.png"]
         for i, filename in enumerate(filenames):
             self.display_plot(filename, counter=i)
 
@@ -409,6 +410,22 @@ class GraphFrame():
         fig.update_layout(showlegend=False, margin=dict(l=20, r=20, t=20, b=20))
         fig.write_image(f"images/{name}")
 
+    def create_line_plot(self):
+        df = self.stats.copy()
+        df = df.loc[df["Source"] != '[Removed]']
+        df = df.loc[df["Published"].notnull()]
+
+        df["Published"] = pd.to_datetime(df['Published'], format='mixed')
+        df["Date"] = df['Published'].dt.date
+        df = df.groupby('Date', as_index=False)["Length"].count()
+        
+        fig = px.line(df, x='Date', y='Length', 
+                      labels={'Date': 'Date', 'Length': 'Articles'}, 
+                      width=800, height=300, template='plotly_dark')
+        
+        fig.update_layout(showlegend=False, margin=dict(l=20, r=20, t=20, b=20))
+        fig.write_image("images/fig_published_at.png")
+
     def display_plot(self, filename, counter):
         if os.path.isfile(f"images/{filename}"):
             # Load image
@@ -418,8 +435,9 @@ class GraphFrame():
             # GUI img label
             row = counter // 2
             col = counter % 2
+            colspan = 2 if counter == 2 else 1
             self.labels[counter] = tk.Label(self.root, image=self.plots[counter], bg=self.bg_color)
-            self.labels[counter].grid(row=row, column=col, sticky='nsew')
+            self.labels[counter].grid(row=row, column=col, columnspan=colspan, sticky='nsew')
             self.labels[counter].image = self.plots[counter]
 
 
