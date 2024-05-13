@@ -298,18 +298,28 @@ class GraphFrame():
                 os.remove(f"images/{f}")
         
         # Data wrangling
-        self.summarise_by_source(data)
+        self.summarise_data(data)
 
         # Create plots and save pngs
-        self.create_count_plot()
-        self.create_len_plot()
+        self.create_vbar_plot(
+            df=self.stats_count,
+            x="Count", y="Source",
+            mean=self.stats.groupby("Source")["Length"].count().mean(),
+            name="fig_source_count.png"
+        )
+        self.create_vbar_plot(
+            df=self.stats_len,
+            x="Length", y="Source",
+            mean=self.stats["Length"].mean(),
+            name="fig_source_length.png"
+        )
 
         # Display plots
         filenames = ["fig_source_count.png", "fig_source_length.png", "fig_source_count.png", "fig_source_length.png"]
         for i, filename in enumerate(filenames):
-            self.display_bar_plot(filename, counter=i)
+            self.display_plot(filename, counter=i)
 
-    def summarise_by_source(self, data):
+    def summarise_data(self, data):
         stats = []
         for article in data:
             # Get source name and article length
@@ -319,20 +329,45 @@ class GraphFrame():
 
             stats.append([source, length, published])
 
+        # Store stats
         df = pd.DataFrame(stats, columns=["Source", "Length", "Published"])
         self.stats = df
 
-        count_df = df.groupby("Source", as_index=False)["Length"].count()
-        count_df.columns = ["Source", "Count"]
-        count_df.sort_values("Source", inplace=True)
-        count_df["Rank"] = count_df["Count"].rank(method="first")
-        count_df["Top"] = True
-        count_df.loc[count_df["Rank"] >= 10, "Top"] = False
+        # Run other aggregations 
+        self.summarise_counts()
+        self.summarise_lengths()
 
-        count_df.loc[~count_df["Top"], "Source"] = "Other"
-        count_df = count_df.groupby("Source", as_index=False)["Count"].sum()
-        count_df.sort_values("Count", inplace=True)
-        self.stats_count = count_df
+    def summarise_counts(self):
+        # Get counts by soure
+        df = self.stats.groupby("Source", as_index=False)["Length"].count()
+        df.columns = ["Source", "Count"]
+
+        # Mark top 10
+        df.sort_values("Source", inplace=True)
+        df["Rank"] = df["Count"].rank(method="first")
+        df["Top"] = True
+        df.loc[df["Rank"] >= 10, "Top"] = False
+
+        # Group smaller names into "Other" bucket to save room on graphs
+        df.loc[~df["Top"], "Source"] = "Other"
+        df = df.groupby("Source", as_index=False)["Count"].sum()
+        df.sort_values("Count", ascending=False, inplace=True)
+        self.stats_count = df
+
+    def summarise_lengths(self):
+        df = self.stats.copy()
+        
+        # Mark top 10
+        sources = self.stats_count["Source"].tolist()
+        df["Top"] = True
+        df.loc[~df["Source"].isin(sources), "Top"] = False
+        df.loc[~df["Top"], "Source"] = "Other"
+
+        # Get average article length per source
+        df = df.groupby("Source", as_index=False)["Length"].mean()
+        df.sort_values("Length", ascending=False, inplace=True)
+
+        self.stats_len = df
 
     def get_article_length(self, content):
         # Find char counter at end of content
@@ -357,41 +392,24 @@ class GraphFrame():
             content_count = len(content)
         
         return content_count + extra_count
+    
+    def create_vbar_plot(self, df, x, y, mean, name):
+        # Create color map
+        color_map = {source: "#018ADA" for source in df["Source"].unique()}
+        color_map["Other"] = "#A5A4AC"
 
-    def create_count_plot(self):
-        if self.stats_count is not None:
-            df = self.stats_count
+        # Plot
+        fig = px.bar(df, x=x, y=y, color=y, orientation="h", 
+                    color_discrete_map=color_map,
+                    width=400, height=300, template="plotly_dark")
+        
+        # Formatting
+        # Mean should be weighted average across all before the top 10 splits
+        fig.add_vline(x=mean, line_color="#9D0620", line_dash="dot")
+        fig.update_layout(showlegend=False, margin=dict(l=20, r=20, t=20, b=20))
+        fig.write_image(f"images/{name}")
 
-            colors = ["#018ADA", "#A5A4AC"]
-            df["Color"] = colors[0]
-            df.loc[df["Source"] == "Other", "Color"] = colors[1]
-
-            fig = px.bar(df, x="Count", y="Source", color="Color", orientation="h", 
-                        color_discrete_sequence=colors,
-                        width=400, height=300, template="plotly_dark")
-            fig.update_layout(showlegend=False, margin=dict(l=20, r=20, t=20, b=20))
-            fig.write_image("images/fig_source_count.png")
-
-    def create_len_plot(self):
-        self.length_df = OTHER_DF
-
-        if self.length_df is not None:
-            colors = ["#A5A4AC", "#018ADA"]
-            self.length_df["Color"] = colors[0]
-            self.length_df.loc[self.length_df["name"] == "9to5Mac", "Color"] = colors[1]
-
-            fig = px.bar(
-                self.length_df, x='mean', y='name', color="Color", orientation='h', 
-                color_discrete_sequence=colors,
-                width=400, height=300,
-                labels={'name': 'Source', 'mean': 'Length (avg.)'}, 
-                template='plotly_dark'
-            )
-            fig.add_vline(x=self.length_df["mean"].mean(), line_color="#9D0620", line_dash="dot")
-            fig.update_layout(showlegend=False, margin=dict(l=20, r=20, t=20, b=20))
-            fig.write_image("images/fig_source_length.png")
-
-    def display_bar_plot(self, filename, counter):
+    def display_plot(self, filename, counter):
         if os.path.isfile(f"images/{filename}"):
             # Load image
             img = Image.open(f"images/{filename}")
