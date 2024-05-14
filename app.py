@@ -704,6 +704,8 @@ class MainApp:
         self.language_label.config(text=f"Language: {language_var}")
 
     def fetch_news(self):
+        self.root.statusbar.set(text="Downloading from NewsAPI ...")
+
         news_obj = TopHeadlines()
         
         # Add params
@@ -717,6 +719,8 @@ class MainApp:
             # self.cached_results = news_obj.make_request()
             
             self.display_results()
+
+        self.root.statusbar.clear()
 
     def display_results(self):
         self.display = {}
