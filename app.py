@@ -736,20 +736,27 @@ class MainApp:
 
         self.root.statusbar.clear()
 
-    def fetch_news_test(self):
-        self.root.statusbar.set(text="Downloading from Test Data ...")
-
-        # Resets
+    def reset_content(self):
+        # Clear results
         self.root.cached_results = None
+
+        # Disable navigation buttons
         self.right_frame.button_next["state"] = "disabled"
         self.right_frame.button_back["state"] = "disabled"
         self.right_frame.button_analytics["state"] = "disabled"
 
+        # Unpack currently displayed content 
         if self.right_frame.show_content:
             if self.right_frame.page:
                 self.right_frame.cached[self.right_frame.page].pack_forget()
         else:
             self.right_frame.analytics_content.pack_forget()
+
+    def fetch_news_test(self):
+        self.root.statusbar.set(text="Downloading from Test Data ...")
+
+        # Clear existing data and set buttons to default state
+        self.reset_content()
 
         # Get new results
         self.root.cached_results = TEST_ARTICLES
