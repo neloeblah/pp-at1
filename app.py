@@ -462,8 +462,8 @@ class ContentFrame(tk.Frame):
         self.bg_color = bg_color
         self.text_color = text_color
         self.cached = {}
-        self.page = 0
-        self.page_len = 5
+        self.page = None
+        # self.page_len = 5
         self.analytics_content = None
         self.show_content = True
         tk.Frame.__init__(self, root, width=800, highlightbackground="black", highlightthickness=1, bg=bg_color)
@@ -489,26 +489,37 @@ class ContentFrame(tk.Frame):
         self.button_back.pack(in_=self.nav, side=tk.LEFT, pady=10)
 
         # Forward button
-        if len(TEST_ARTICLES) < self.page_len:
+        analytics_state = "normal"
+        if self.root.cached_results is None:
             next_state = "disabled"
+            analytics_state = "disabled"
+        elif len(self.root.cached_results) < self.root.page_len:
+            next_state = "disabled"
+            self.page = 0
         else:
             next_state = "normal"
+            self.page = 0
         self.button_next = ttk.Button(self.root, text='Next Page', style='W.TButton', command=self.next_frame, state=next_state)
         self.button_next.pack(in_=self.nav, side=tk.RIGHT, pady=10)
 
         # Analytics button
-        self.button_analytics = ttk.Button(self.root, text="Analytics", style='W.TButton', command=self.show_analytics, state="normal")
+        self.button_analytics = ttk.Button(self.root, text="Analytics", style='W.TButton', command=self.show_analytics, state=analytics_state)
         self.button_analytics.pack(in_=self.display, side=tk.BOTTOM, pady=10)
 
         ##### Content
         self.wrap_len = 700
         self.articles = {}
-        self.data = [data for data in TEST_ARTICLES if data['title'] != '[Removed]']
+        # self.data = [data for data in TEST_ARTICLES if data['title'] != '[Removed]']
 
-        # Set up first set of results
-        self.cached[self.page] = tk.Frame(self.root)
-        self.add_article_elements(target=self.cached[self.page], articles=self.data[:self.page_len])
-        self.cached[self.page].pack(in_=self.display)
+    def show_results(self):
+        if self.root.cached_results:
+            cut_off = max(self.root.page_len, len(self.root.cached_results))
+            data = self.root.cached_results[:cut_off]
+
+            # Set up first set of results
+            self.cached[self.page] = tk.Frame(self.root)
+            self.add_article_elements(target=self.cached[self.page], articles=data)
+            self.cached[self.page].pack(in_=self.display)
 
     def add_article_elements(self, target, articles):
         counter = 0
@@ -520,7 +531,6 @@ class ContentFrame(tk.Frame):
                     source = source.get('name', None)
 
                 self.articles[counter] = articleGroup(
-                    #root=self.content_frame,
                     root=target,
                     bg_color="#FFF8E4",
                     spacing_color=self.bg_color,
@@ -545,9 +555,9 @@ class ContentFrame(tk.Frame):
         self.page += 1
 
         # Select relevant articles from api request
-        start_idx = self.page * self.page_len
-        end_idx = min(start_idx + self.page_len, len(self.data))
-        selected_data = self.data[start_idx:end_idx]
+        start_idx = self.page * self.root.page_len
+        end_idx = min(start_idx + self.root.page_len, len(self.root.cached_results))
+        selected_data = self.root.cached_results[start_idx:end_idx]
 
         # Cache helps performance if images have been loaded
         if self.page not in self.cached.keys():
@@ -559,7 +569,7 @@ class ContentFrame(tk.Frame):
 
         # Disable next button if final article is reached
         self.button_back["state"] = "normal"
-        if end_idx == len(self.data):
+        if end_idx == len(self.root.cached_results):
             self.button_next["state"] = "disabled"
 
     def back_frame(self):
@@ -628,7 +638,7 @@ class ContentFrame(tk.Frame):
             else:
                 self.button_back["state"] = "normal"
             
-            if (self.page + 1) * self.page_len > len(self.data):
+            if (self.page + 1) * self.root.page_len > len(self.root.cached_results):
                 self.button_next["state"] = "disabled"
             else:
                 self.button_next["state"] = "normal"
@@ -646,8 +656,9 @@ class MainApp:
         self.root = root
         self.root.geometry("1100x750")
         self.root.title("News Aggregator")
-        self.news = None
-        self.cached_results = None
+        self.root.news = None
+        self.root.cached_results = None
+        self.root.page_len = 5
 
         self.root.statusbar = StatusBar(root)
         self.root.statusbar.pack(side=tk.BOTTOM, fill=tk.X)
@@ -665,12 +676,15 @@ class MainApp:
         self.left_frame.call_button = ttk.Button(self.left_frame, text='Get News', style='W.TButton', command=self.fetch_news, state="disabled")
         self.left_frame.call_button.pack(pady=(20, 5))
 
+        self.left_frame.call_button_test = ttk.Button(self.left_frame, text='Test Data', style='W.TButton', command=self.fetch_news_test, state="normal")
+        self.left_frame.call_button_test.pack(pady=(20, 5))
+
         # Content
         self.right_frame = ContentFrame(root, bg_color="#FFF1C8", text_color="#000000")
         self.right_frame.pack_propagate(False)
 
-        if self.cached_results:
-            self.display_results()
+        # if self.cached_results:
+        #     self.display_results()
             
         # # Show selections
         # self.category_label = tk.Label(self.right_frame, text="")
@@ -719,6 +733,34 @@ class MainApp:
             # self.cached_results = news_obj.make_request()
             
             self.display_results()
+
+        self.root.statusbar.clear()
+
+    def fetch_news_test(self):
+        self.root.statusbar.set(text="Downloading from Test Data ...")
+
+        # Resets
+        self.root.cached_results = None
+        self.right_frame.button_next["state"] = "disabled"
+        self.right_frame.button_back["state"] = "disabled"
+        self.right_frame.button_analytics["state"] = "disabled"
+
+        if self.right_frame.show_content:
+            if self.right_frame.page:
+                self.right_frame.cached[self.right_frame.page].pack_forget()
+        else:
+            self.right_frame.analytics_content.pack_forget()
+
+        # Get new results
+        self.root.cached_results = TEST_ARTICLES
+        self.root.cached_results = [article for article in self.root.cached_results if article["source"]["name"] != "[Removed]"]
+        self.right_frame.page = 0
+
+        # Show new results
+        self.right_frame.show_results()
+        self.right_frame.button_analytics["state"] = "normal"
+        if len(self.root.cached_results) > self.root.page_len:
+            self.right_frame.button_next["state"] = "normal"
 
         self.root.statusbar.clear()
 
