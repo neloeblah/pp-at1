@@ -720,6 +720,10 @@ class MainApp:
     def fetch_news(self):
         self.root.statusbar.set(text="Downloading from NewsAPI ...")
 
+        # Clear existing data
+        self.reset_content()
+
+        # Create news object
         news_obj = TopHeadlines()
         
         # Add params
@@ -730,9 +734,15 @@ class MainApp:
         if len(params) > 0:
             news_obj.add_params(params)
             self.news = news_obj
-            # self.cached_results = news_obj.make_request()
+            self.root.cached_results = news_obj.make_request()
+            self.root.cached_results = [article for article in self.root.cached_results if article["source"]["name"] != "[Removed]"]
+            self.right_frame.page = 0
             
-            self.display_results()
+            # Show new results
+            self.right_frame.show_results()
+            self.right_frame.button_analytics["state"] = "normal"
+            if len(self.root.cached_results) > self.root.page_len:
+                self.right_frame.button_next["state"] = "normal"
 
         self.root.statusbar.clear()
 
