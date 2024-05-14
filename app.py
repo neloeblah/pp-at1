@@ -86,6 +86,21 @@ TEST_ARTICLES = [
 TEST_ARTICLES = TEST_ARTICLES + TEST_ARTICLES[::-1]
 TEST_ARTICLES = TEST_ARTICLES * 2
 
+class StatusBar(tk.Frame):
+    def __init__(self, root):
+        tk.Frame.__init__(self, root)
+        self.label = tk.Label(self, bd=1, relief=tk.SUNKEN, anchor=tk.E)
+        self.label.pack(side=tk.BOTTOM, fill=tk.X)
+    
+    def set(self, text):
+        self.label.config(text=text)
+        self.label.update_idletasks()
+
+    def clear(self):
+        self.label.config(text="")
+        self.label.update_idletasks()
+
+
 class DropMenu:
     def __init__(self, root, text, options, pady=(20,5), width=5):
         self.root = root
@@ -583,6 +598,8 @@ class ContentFrame(tk.Frame):
 
     def show_analytics(self):
         if self.show_content:
+            self.root.statusbar.set(text="Loading Analytics ...")
+
             # Remove existing content
             self.cached[self.page].pack_forget()
             self.button_back["state"] = "disabled"
@@ -597,9 +614,9 @@ class ContentFrame(tk.Frame):
                     text_color="#000000",
                     data=TEST_ARTICLES
                 )
-            
-            self.analytics_content.pack(in_=self.display)
 
+            self.analytics_content.pack(in_=self.display)
+            self.root.statusbar.clear()
         else:
             # Remove existing content
             self.analytics_content.pack_forget()
@@ -621,7 +638,7 @@ class ContentFrame(tk.Frame):
         text = "Analytics" if self.show_content else "Back to News"
         self.button_analytics.config(text=text)
 
-
+        
 class MainApp:
     __api_key = ""
 
@@ -631,6 +648,9 @@ class MainApp:
         self.root.title("News Aggregator")
         self.news = None
         self.cached_results = None
+
+        self.root.statusbar = StatusBar(root)
+        self.root.statusbar.pack(side=tk.BOTTOM, fill=tk.X)
 
         # Menu
         self.left_frame = MenuFrame(root, bg_color="#27212E", text_color="#FFFFFF", 
