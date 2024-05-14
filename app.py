@@ -627,7 +627,7 @@ class MainApp:
 
     def __init__(self, root):
         self.root = root
-        self.root.geometry("1000x700")
+        self.root.geometry("1100x750")
         self.root.title("News Aggregator")
         self.news = None
         self.cached_results = None
@@ -752,21 +752,6 @@ class MainApp:
 
                 #self.display[f"article_{count}"].config(image=image, width=image.width(), height=image.height())
                 count += 1
-
-import plotly.express as px
-import os
-
-
-def create_bar_plot(df):
-    if not os.path.exists("images"):
-        os.mkdir("images")
-    
-    fig = px.bar(df, x="Count", y="Source", orientation="h", template="plotly_dark")
-    fig.write_image("images/fig_source_count.png")
-
-def display_bar_plot():
-    if os.path.isfile("images/fig_source_count.png"):
-       pass
 
 def main():
     root = tk.Tk()
