@@ -86,6 +86,21 @@ TEST_ARTICLES = [
 TEST_ARTICLES = TEST_ARTICLES + TEST_ARTICLES[::-1]
 TEST_ARTICLES = TEST_ARTICLES * 2
 
+class StatusBar(tk.Frame):
+    def __init__(self, root):
+        tk.Frame.__init__(self, root)
+        self.label = tk.Label(self, bd=1, relief=tk.SUNKEN, anchor=tk.E)
+        self.label.pack(side=tk.BOTTOM, fill=tk.X)
+    
+    def set(self, text):
+        self.label.config(text=text)
+        self.label.update_idletasks()
+
+    def clear(self):
+        self.label.config(text="")
+        self.label.update_idletasks()
+
+
 class DropMenu:
     def __init__(self, root, text, options, pady=(20,5), width=5):
         self.root = root
@@ -583,6 +598,8 @@ class ContentFrame(tk.Frame):
 
     def show_analytics(self):
         if self.show_content:
+            self.root.statusbar.set(text="Loading Analytics ...")
+
             # Remove existing content
             self.cached[self.page].pack_forget()
             self.button_back["state"] = "disabled"
@@ -597,9 +614,9 @@ class ContentFrame(tk.Frame):
                     text_color="#000000",
                     data=TEST_ARTICLES
                 )
-            
-            self.analytics_content.pack(in_=self.display)
 
+            self.analytics_content.pack(in_=self.display)
+            self.root.statusbar.clear()
         else:
             # Remove existing content
             self.analytics_content.pack_forget()
@@ -621,16 +638,19 @@ class ContentFrame(tk.Frame):
         text = "Analytics" if self.show_content else "Back to News"
         self.button_analytics.config(text=text)
 
-
+        
 class MainApp:
     __api_key = ""
 
     def __init__(self, root):
         self.root = root
-        self.root.geometry("1000x700")
+        self.root.geometry("1100x750")
         self.root.title("News Aggregator")
         self.news = None
         self.cached_results = None
+
+        self.root.statusbar = StatusBar(root)
+        self.root.statusbar.pack(side=tk.BOTTOM, fill=tk.X)
 
         # Menu
         self.left_frame = MenuFrame(root, bg_color="#27212E", text_color="#FFFFFF", 
@@ -684,6 +704,8 @@ class MainApp:
         self.language_label.config(text=f"Language: {language_var}")
 
     def fetch_news(self):
+        self.root.statusbar.set(text="Downloading from NewsAPI ...")
+
         news_obj = TopHeadlines()
         
         # Add params
@@ -697,6 +719,8 @@ class MainApp:
             # self.cached_results = news_obj.make_request()
             
             self.display_results()
+
+        self.root.statusbar.clear()
 
     def display_results(self):
         self.display = {}
@@ -752,21 +776,6 @@ class MainApp:
 
                 #self.display[f"article_{count}"].config(image=image, width=image.width(), height=image.height())
                 count += 1
-
-import plotly.express as px
-import os
-
-
-def create_bar_plot(df):
-    if not os.path.exists("images"):
-        os.mkdir("images")
-    
-    fig = px.bar(df, x="Count", y="Source", orientation="h", template="plotly_dark")
-    fig.write_image("images/fig_source_count.png")
-
-def display_bar_plot():
-    if os.path.isfile("images/fig_source_count.png"):
-       pass
 
 def main():
     root = tk.Tk()
