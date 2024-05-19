@@ -125,20 +125,34 @@ class DropMenu:
 
 
 class MenuFrame(tk.Frame):
-    def __init__(self, root, bg_color, text_color, update_callback):
+    def __init__(self, root, bg_color, text_color, update_callback, search_callback, latest_callback):
         self.bg_color = bg_color
         self.text_color = text_color
         self.update_callback = update_callback
+        self.search_callback = search_callback
+        self.latest_callback = latest_callback
+        self.news_type = 1
         tk.Frame.__init__(self, root, width=200, bg=self.bg_color)
         self.pack(side=tk.LEFT, fill=tk.BOTH, expand=True)
         
-        # API Key
-        self.key_label = tk.Label(self, text="NewsAPI api key:", bg=self.bg_color, fg=self.text_color)
-        self.key_label.pack(pady=(10, 5))
-        self.key_entry = tk.Entry(self)
-        self.key_entry.pack()
+        # Stylings for widgets
+        style = ttk.Style()
+        style.configure('W.TButton', background="#27212E", font=('Calibri', 12, 'bold'))
+        header_font = ("TkDefaultFont", 10, "underline")
+
+        # Buttons to get latest news
+        self.simple_label = tk.Label(self, text="Simple Search:", bg=self.bg_color, fg=self.text_color, font=header_font)
+        self.simple_label.pack(pady=(20, 5))
+        self.latest_button = ttk.Button(self, text='Get Latest News', style='W.TButton', command=latest_callback, state="disabled")
+        self.latest_button.pack(pady=(10, 5))
+
+        # Set a divider between two types of seach
+        separator = ttk.Separator(self, orient='horizontal')
+        separator.pack(fill=tk.X, padx=30, pady=(20, 5))
 
         # Search Query
+        self.advanced_label = tk.Label(self, text="Advanced Search:", bg=self.bg_color, fg=self.text_color, font=header_font)
+        self.advanced_label.pack(pady=(20, 5))
         self.query_label = tk.Label(self, text="Search query:", bg=self.bg_color, fg=self.text_color)
         self.query_label.pack(pady=(10, 5))
         self.query_entry = tk.Entry(self)
@@ -157,6 +171,26 @@ class MenuFrame(tk.Frame):
         for menu in [self.country_menu, self.language_menu]:
             menu.create_label()
             menu.create_menu()
+
+        # Search type
+        self.type_label = tk.Label(self, text="Search Type:", bg=self.bg_color, fg=self.text_color)
+        self.type_label.pack(pady=(20, 5))
+        self.type_var = tk.IntVar(value=1)
+        self.r1 = tk.Radiobutton(self, text="Everything", bg=self.bg_color, fg=self.text_color,
+                                 selectcolor="black",
+                                 variable=self.type_var, value=1, command=self.update_type)
+        self.r1.pack()
+        self.r2 = tk.Radiobutton(self, text="Top Headlines", bg=self.bg_color, fg=self.text_color,
+                                 selectcolor="black", 
+                                 variable=self.type_var, value=2, command=self.update_type)
+        self.r2.pack()
+
+        # Run search version of news
+        self.search_button = ttk.Button(self, text='Run Search', style='W.TButton', command=search_callback, state="normal")
+        self.search_button.pack(pady=(20, 5))
+
+    def update_type(self):
+        self.news_type = self.type_var.get()
 
     def create_category_menu(self):
         categories = CATEGORY_OPTIONS
@@ -512,7 +546,7 @@ class ContentFrame(tk.Frame):
 
     def show_results(self):
         if self.root.downloaded_results:
-            cut_off = max(self.root.page_len, len(self.root.downloaded_results))
+            cut_off = min(self.root.page_len, len(self.root.downloaded_results))
             data = self.root.downloaded_results[:cut_off]
 
             # Set up first set of results
@@ -621,7 +655,7 @@ class ContentFrame(tk.Frame):
                     self.analytics_content, 
                     bg_color="#FFF1C8", 
                     text_color="#000000",
-                    data=TEST_ARTICLES
+                    data=self.root.downloaded_results
                 )
 
             self.analytics_content.pack(in_=self.display)
@@ -664,19 +698,11 @@ class MainApp:
 
         # Menu
         self.left_frame = MenuFrame(root, bg_color="#27212E", text_color="#FFFFFF", 
-                                    update_callback=self.update_category_selections)
+                                    update_callback=self.update_category_selections,
+                                    search_callback=self.search_news,
+                                    latest_callback=self.latest_news)
         self.left_frame.pack_propagate(False)
-        self.left_frame.key_entry.bind("<Return>", self.set_api_key)
-
-        # API Button
-        style = ttk.Style()
-        style.configure('W.TButton', background="#27212E", font=('calibri', 10, 'bold', 'underline'))
-
-        self.left_frame.call_button = ttk.Button(self.left_frame, text='Get News', style='W.TButton', command=self.fetch_news, state="disabled")
-        self.left_frame.call_button.pack(pady=(20, 5))
-
-        self.left_frame.call_button_test = ttk.Button(self.left_frame, text='Test Data', style='W.TButton', command=self.fetch_news_test, state="normal")
-        self.left_frame.call_button_test.pack(pady=(20, 5))
+        # self.left_frame.key_entry.bind("<Return>", self.set_api_key)
 
         # Content
         self.right_frame = ContentFrame(root, bg_color="#FFF1C8", text_color="#000000")
@@ -697,43 +723,109 @@ class MainApp:
         language_var = self.left_frame.language_menu.option_var.get()
         self.language_label.config(text=f"Language: {language_var}")
 
-    def fetch_news(self):
+    def latest_news(self):
         self.root.statusbar.set(text="Downloading from NewsAPI ...")
 
         # Clear existing data
         self.reset_content()
 
         # Create news object
-        news_obj = TopHeadlines()
-        
-        # Add params
-        params = {}
-        if self.left_frame.query_entry != "":
-            params["q"] = self.left_frame.query_entry.get()
+        news_obj = News()
 
-        if len(params) > 0:
-            news_obj.add_params(params)
-            self.news = news_obj
-            self.root.downloaded_results = news_obj.make_request()
-            self.root.downloaded_results = [article for article in self.root.downloaded_results if article["source"]["name"] != "[Removed]"]
-            self.right_frame.page = 0
+        params = {}
+
+    # TO-DO: update params
+
+        news_obj.add_params(params)
+        self.news = news_obj
+
+        results = news_obj.make_request()
+        if results.get("status", None) == "ok":
+            i = results["totalResults"]
+            status_text = f"Retrieved {i} results."
             
+            articles = [a for a in results["articles"] if a["source"]["name"] != "[Removed]"]
+            if len(articles) < i:
+                j = i - len(articles)
+                status_text += f" {j} articles have been removed by API source."
+
+            self.root.statusbar.set(text=status_text)
+            self.root.downloaded_results = articles 
+            self.right_frame.page = 0
+        
             # Show new results
             self.right_frame.show_results()
             self.right_frame.button_analytics["state"] = "normal"
             if len(self.root.downloaded_results) > self.root.page_len:
                 self.right_frame.button_next["state"] = "normal"
 
-        self.root.statusbar.clear()
+        else: 
+            status_text = results.get("message", "Error")
+        # TO-DO: clean up error message
+            self.root.statusbar.set(text=status_text)
+
+    def search_news(self):
+        self.root.statusbar.set(text="Downloading from NewsAPI ...")
+
+        # Clear existing data
+        self.reset_content()
+
+        # Create news object
+        if self.left_frame.news_type == 2:
+            news_obj = TopHeadlines()
+        else:
+            news_obj = News()
+        
+        # Add params
+        params = {}
+
+        # Check if query has been entered
+        query_content = self.left_frame.query_entry.get()
+        if query_content:
+            params["q"] = self.left_frame.query_entry.get()
+        else:
+            self.root.statusbar.set(text="Query required, please enter and retry search.")
+
+        # TO-DO: updates for category, country, language
+
+        if len(params) > 0:
+            news_obj.add_params(params)
+            self.news = news_obj
+
+            results = news_obj.make_request()
+            if results.get("status", None) == "ok":
+                i = results["totalResults"]
+                status_text = f"Retrieved {i} results."
+                
+                articles = [a for a in results["articles"] if a["source"]["name"] != "[Removed]"]
+                if len(articles) < i:
+                    j = i - len(articles)
+                    status_text += f" {j} articles have been removed by API source."
+
+                self.root.statusbar.set(text=status_text)
+                self.root.downloaded_results = articles 
+                self.right_frame.page = 0
+            
+                # Show new results
+                self.right_frame.show_results()
+                self.right_frame.button_analytics["state"] = "normal"
+                if len(self.root.downloaded_results) > self.root.page_len:
+                    self.right_frame.button_next["state"] = "normal"
+
+            else: 
+                status_text = results.get("message", "Error")
+            # TO-DO: clean up error message
+                self.root.statusbar.set(text=status_text)
 
     def reset_content(self):
         # Clear results
         self.root.downloaded_results = None
-
+        
         # Disable navigation buttons
         self.right_frame.button_next["state"] = "disabled"
         self.right_frame.button_back["state"] = "disabled"
         self.right_frame.button_analytics["state"] = "disabled"
+        self.right_frame.button_analytics.config(text="Analytics")
 
         # Unpack currently displayed content 
         if self.right_frame.show_content:
@@ -741,6 +833,9 @@ class MainApp:
                 self.right_frame.cached[self.right_frame.page].pack_forget()
         else:
             self.right_frame.analytics_content.pack_forget()
+
+        self.right_frame.analytics_content = None
+        self.right_frame.show_content = True
 
     def fetch_news_test(self):
         self.root.statusbar.set(text="Downloading from Test Data ...")
