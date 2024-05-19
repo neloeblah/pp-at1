@@ -89,7 +89,7 @@ TEST_ARTICLES = TEST_ARTICLES * 2
 class StatusBar(tk.Frame):
     def __init__(self, root):
         tk.Frame.__init__(self, root)
-        self.label = tk.Label(self, bd=1, relief=tk.SUNKEN, anchor=tk.E)
+        self.label = tk.Label(self, anchor=tk.E)
         self.label.pack(side=tk.BOTTOM, fill=tk.X)
     
     def set(self, text):
@@ -123,13 +123,13 @@ class DropMenu:
         self.menu = ttk.Combobox(self.root, width=self.width, textvariable=self.option_var, values=self.options)
         self.menu.pack()
 
+
 class MenuFrame(tk.Frame):
     def __init__(self, root, bg_color, text_color, update_callback):
         self.bg_color = bg_color
         self.text_color = text_color
         self.update_callback = update_callback
-        
-        tk.Frame.__init__(self, root, width=200, highlightbackground="black", highlightthickness=1, bg=self.bg_color)
+        tk.Frame.__init__(self, root, width=200, bg=self.bg_color)
         self.pack(side=tk.LEFT, fill=tk.BOTH, expand=True)
         
         # API Key
@@ -463,10 +463,9 @@ class ContentFrame(tk.Frame):
         self.text_color = text_color
         self.cached = {}
         self.page = None
-        # self.page_len = 5
         self.analytics_content = None
         self.show_content = True
-        tk.Frame.__init__(self, root, width=800, highlightbackground="black", highlightthickness=1, bg=bg_color)
+        tk.Frame.__init__(self, root, width=800, bg=bg_color)
         self.pack(side=tk.RIGHT, fill=tk.BOTH, expand=True)
         
         # Header
@@ -490,10 +489,10 @@ class ContentFrame(tk.Frame):
 
         # Forward button
         analytics_state = "normal"
-        if self.root.cached_results is None:
+        if self.root.downloaded_results is None:
             next_state = "disabled"
             analytics_state = "disabled"
-        elif len(self.root.cached_results) < self.root.page_len:
+        elif len(self.root.downloaded_results) < self.root.page_len:
             next_state = "disabled"
             self.page = 0
         else:
@@ -512,9 +511,9 @@ class ContentFrame(tk.Frame):
         # self.data = [data for data in TEST_ARTICLES if data['title'] != '[Removed]']
 
     def show_results(self):
-        if self.root.cached_results:
-            cut_off = max(self.root.page_len, len(self.root.cached_results))
-            data = self.root.cached_results[:cut_off]
+        if self.root.downloaded_results:
+            cut_off = max(self.root.page_len, len(self.root.downloaded_results))
+            data = self.root.downloaded_results[:cut_off]
 
             # Set up first set of results
             self.cached[self.page] = tk.Frame(self.root)
@@ -556,8 +555,8 @@ class ContentFrame(tk.Frame):
 
         # Select relevant articles from api request
         start_idx = self.page * self.root.page_len
-        end_idx = min(start_idx + self.root.page_len, len(self.root.cached_results))
-        selected_data = self.root.cached_results[start_idx:end_idx]
+        end_idx = min(start_idx + self.root.page_len, len(self.root.downloaded_results))
+        selected_data = self.root.downloaded_results[start_idx:end_idx]
 
         # Cache helps performance if images have been loaded
         if self.page not in self.cached.keys():
@@ -569,7 +568,7 @@ class ContentFrame(tk.Frame):
 
         # Disable next button if final article is reached
         self.button_back["state"] = "normal"
-        if end_idx == len(self.root.cached_results):
+        if end_idx == len(self.root.downloaded_results):
             self.button_next["state"] = "disabled"
 
     def back_frame(self):
@@ -638,7 +637,7 @@ class ContentFrame(tk.Frame):
             else:
                 self.button_back["state"] = "normal"
             
-            if (self.page + 1) * self.root.page_len > len(self.root.cached_results):
+            if (self.page + 1) * self.root.page_len > len(self.root.downloaded_results):
                 self.button_next["state"] = "disabled"
             else:
                 self.button_next["state"] = "normal"
@@ -657,7 +656,7 @@ class MainApp:
         self.root.geometry("1100x750")
         self.root.title("News Aggregator")
         self.root.news = None
-        self.root.cached_results = None
+        self.root.downloaded_results = None
         self.root.page_len = 5
 
         self.root.statusbar = StatusBar(root)
@@ -682,25 +681,6 @@ class MainApp:
         # Content
         self.right_frame = ContentFrame(root, bg_color="#FFF1C8", text_color="#000000")
         self.right_frame.pack_propagate(False)
-
-        # if self.cached_results:
-        #     self.display_results()
-            
-        # # Show selections
-        # self.category_label = tk.Label(self.right_frame, text="")
-        # self.update_category_selections()
-        # self.category_label.pack()
-
-        # # Display country/Language
-        # var = self.left_frame.country_menu.option_var.get()
-        # self.country_label = tk.Label(self.right_frame, text=f"Country: {var}")
-        # self.country_label.pack()
-        # self.left_frame.country_menu.menu.bind('<<ComboboxSelected>>', self.update_combobox_selection)
-        
-        # var = self.left_frame.language_menu.option_var.get()
-        # self.language_label = tk.Label(self.right_frame, text=f"Language: {var}")
-        # self.language_label.pack()
-        # self.left_frame.language_menu.menu.bind('<<ComboboxSelected>>', self.update_combobox_selection)
 
     def set_api_key(self, event):
         MainApp.__api_key = self.left_frame.key_entry.get()
@@ -734,21 +714,21 @@ class MainApp:
         if len(params) > 0:
             news_obj.add_params(params)
             self.news = news_obj
-            self.root.cached_results = news_obj.make_request()
-            self.root.cached_results = [article for article in self.root.cached_results if article["source"]["name"] != "[Removed]"]
+            self.root.downloaded_results = news_obj.make_request()
+            self.root.downloaded_results = [article for article in self.root.downloaded_results if article["source"]["name"] != "[Removed]"]
             self.right_frame.page = 0
             
             # Show new results
             self.right_frame.show_results()
             self.right_frame.button_analytics["state"] = "normal"
-            if len(self.root.cached_results) > self.root.page_len:
+            if len(self.root.downloaded_results) > self.root.page_len:
                 self.right_frame.button_next["state"] = "normal"
 
         self.root.statusbar.clear()
 
     def reset_content(self):
         # Clear results
-        self.root.cached_results = None
+        self.root.downloaded_results = None
 
         # Disable navigation buttons
         self.right_frame.button_next["state"] = "disabled"
@@ -769,14 +749,14 @@ class MainApp:
         self.reset_content()
 
         # Get new results
-        self.root.cached_results = TEST_ARTICLES
-        self.root.cached_results = [article for article in self.root.cached_results if article["source"]["name"] != "[Removed]"]
+        self.root.downloaded_results = TEST_ARTICLES
+        self.root.downloaded_results = [article for article in self.root.downloaded_results if article["source"]["name"] != "[Removed]"]
         self.right_frame.page = 0
 
         # Show new results
         self.right_frame.show_results()
         self.right_frame.button_analytics["state"] = "normal"
-        if len(self.root.cached_results) > self.root.page_len:
+        if len(self.root.downloaded_results) > self.root.page_len:
             self.right_frame.button_next["state"] = "normal"
 
         self.root.statusbar.clear()
@@ -787,7 +767,7 @@ class MainApp:
         self.text = {}
         count = 0
 
-        #for article in self.cached_results["articles"][:10]:
+        #for article in self.downloaded_results["articles"][:10]:
         articles = [
             {'source': {'id': None, 'name': '[Removed]'}, 'author': None, 'title': '[Removed]', 'description': '[Removed]', 'url': 'https://removed.com', 'urlToImage': None, 'publishedAt': '1970-01-01T00:00:00Z', 'content': '[Removed]'}, 
             {'source': {'id': 'bbc-sport', 'name': 'BBC Sport'}, 'author': None, 'title': 'NBA play-offs: Tyrese Haliburton leads Indiana Pacers to win over Milwaukee Bucks', 'description': 'Tyrese Haliburton converts a three-point play with 1.6 seconds left in overtime to give the Indiana Pacers a 2-1 lead over the Milwaukee Bucks in their Eastern Conference first-round play-off series.', 'url': 'http://www.bbc.co.uk/sport/basketball/articles/cg30zl29mzlo', 'urlToImage': 'https://ichef.bbci.co.uk/news/1024/branded_sport/7f48/live/1c411940-045e-11ef-b9d8-4f52aebe147d.jpg', 'publishedAt': '2024-04-27T07:52:13.3513784Z', 'content': 'Tyrese Haliburton converted a three-point play with 1.6 seconds left in overtime to give the Indiana Pacers a 2-1 lead over the Milwaukee Bucks in their Eastern Conference first-round play-off series… [+864 chars]'}, 
