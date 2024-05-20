@@ -12,79 +12,12 @@ from tkinter import ttk
 from newsapi import News, TopHeadlines
 from PIL import ImageTk, Image
 
-names_dict = {'Business Insider': 4,
- 'NPR': 5,
- 'ESPN': 27,
- 'Ars Technica': 1,
- 'The Athletic': 1,
- 'CNET': 1,
- 'ABC News': 1,
- 'ReadWrite': 3,
- 'MacRumors': 2,
- 'Buzzfeed': 1,
- 'Le Monde': 12,
- 'Digital Trends': 7,
- 'Android Police': 1,
- '9to5Mac': 1,
- 'HYPEBEAST': 4,
- 'Rolling Stone': 1,
- 'Yahoo Entertainment': 1,
- 'Bleacher Report': 8,
- 'Hipertextual': 1,
- 'GameSpot': 1,
- 'Die Zeit': 12,
- 'Slashdot.org': 1,
- 'BBC News': 1,
- 'Presse-citron': 1}
-df = pd.DataFrame.from_dict(names_dict, orient="index").reset_index()
-df.columns = ["Source", "Count"]
-df.sort_values("Count", inplace=True)
-
-n = len(df)
-if n > 10:
-    top_10 = df.tail(10)
-    rest = df.head(n-10).copy()
-    rest["Source"] = "Other"
-    rest = rest.groupby("Source", as_index=False)["Count"].sum()
-    
-    CHART_DF = pd.concat([rest, top_10]).reset_index(drop=True)
-else:
-    CHART_DF = df
-
-cols = ["name",	"count",	"mean"]
-data = [
-["9to5Mac",	1,	2519.000000],
-["ABC News",	1,	2009.000000],
-["Android Police",	1,	6570.000000],
-["Ars Technica",	1,	5447.000000],
-["Bleacher Report",	7,	1770.571429],
-["Business Insider",	4,	3538.250000],
-["Buzzfeed",	1,	279.000000],
-["CNET",	1,	2155.000000],
-["Die Zeit",	12,	2868.000000],
-["Digital Trends",	7,	2943.571429]
-]
-OTHER_DF = pd.DataFrame(data, columns=cols)
-
-
 COUNTRY_OPTIONS = ['ae', 'ar', 'at', 'au', 'be', 'bg', 'br', 'ca', 'ch', 'cn', 'co', 'cu', 'cz', 'de',
                    'eg', 'fr', 'gb', 'gr', 'hk', 'hu', 'id', 'ie', 'il', 'in', 'it', 'jp', 'kr', 'lt', 
                    'lv', 'ma', 'mx', 'my', 'ng', 'nl', 'no', 'nz', 'ph', 'pl', 'pt', 'ro', 'rs', 'ru', 
                     'sa', 'se', 'sg', 'si', 'sk', 'th', 'tr', 'tw', 'ua', 'us', 've', 'za']
 LANGUAGE_OPTIONS = ['ar', 'de', 'en', 'es', 'fr', 'he', 'it', 'nl', 'no', 'pt', 'ru', 'sv', 'ud', 'zh']
 CATEGORY_OPTIONS = ['business', 'entertainment', 'general', 'health', 'science', 'sports', 'technology']
-
-TEST_ARTICLES = [
-            {'source': {'id': None, 'name': '[Removed]'}, 'author': None, 'title': '[Removed]', 'description': '[Removed]', 'url': 'https://removed.com', 'urlToImage': None, 'publishedAt': '1970-01-01T00:00:00Z', 'content': '[Removed]'}, 
-            {'source': {'id': 'bbc-sport', 'name': 'BBC Sport'}, 'author': None, 'title': 'NBA play-offs: Tyrese Haliburton leads Indiana Pacers to win over Milwaukee Bucks', 'description': 'Tyrese Haliburton converts a three-point play with 1.6 seconds left in overtime to give the Indiana Pacers a 2-1 lead over the Milwaukee Bucks in their Eastern Conference first-round play-off series.', 'url': 'http://www.bbc.co.uk/sport/basketball/articles/cg30zl29mzlo', 'urlToImage': 'https://ichef.bbci.co.uk/news/1024/branded_sport/7f48/live/1c411940-045e-11ef-b9d8-4f52aebe147d.jpg', 'publishedAt': '2024-04-27T07:52:13.3513784Z', 'content': 'Tyrese Haliburton converted a three-point play with 1.6 seconds left in overtime to give the Indiana Pacers a 2-1 lead over the Milwaukee Bucks in their Eastern Conference first-round play-off series… [+864 chars]'}, 
-            {'source': {'id': 'cbs-news', 'name': 'CBS News'}, 'author': 'Meredith Gordon', 'title': 'How to watch the Cleveland Cavaliers vs. Orlando Magic NBA Playoffs game tonight: Game 4 livestream options, more', 'description': "Find out how and when to watch Game 4 of the Cavaliers vs. Magic NBA Playoffs series, even if you don't have cable.", 'url': 'https://www.cbsnews.com/essentials/how-to-watch-todays-cavaliers-vs-magic-nba-playoffs-game-game-4-livestream-options-start-time-and-more/', 'urlToImage': 'https://assets3.cbsnewsstatic.com/hub/i/r/2024/04/26/6570261c-23f8-4c32-8417-2cfd5148e080/thumbnail/1200x630/98546cb5680e0d153001f7a7148851d3/gettyimages-2150246951-1.jpg?v=63c131a0051f3823d92b0d1dffb5e0e4', 'publishedAt': '2024-04-27T05:06:47+00:00', 'content': 'Darius Garland #10 of the Cleveland Cavaliers dribbles the ball against Paolo Banchero #5 of the Orlando Magic during the third quarter of game three of the Eastern Conference First Round Playoffs at… [+8406 chars]'}, 
-            {'source': {'id': 'cbs-news', 'name': 'CBS News'}, 'author': 'Meredith Gordon', 'title': 'How to watch the Denver Nuggets vs. Los Angeles Lakers NBA Playoffs game tonight: Game 4 livestream options, more', 'description': "Here's how and when to watch Game 4 of the Denver Nuggets vs. Los Angeles Lakers NBA Playoffs series.", 'url': 'https://www.cbsnews.com/essentials/how-to-watch-tonights-denver-nuggets-vs-los-angeles-lakers-game-4/', 'urlToImage': 'https://assets3.cbsnewsstatic.com/hub/i/r/2024/04/26/0d01dd18-1c25-4fcb-9c8d-1b080342a800/thumbnail/1200x630/3d5ceb8e0d7954dbedd2664d016fbfbf/gettyimages-2150339085-1.jpg?v=63c131a0051f3823d92b0d1dffb5e0e4', 'publishedAt': '2024-04-27T04:59:00+00:00', 'content': 'Nikola Jokic #15 of the Denver Nuggets during game three of the Western Conference First Round Playoffs at Crypto.com Arena on April 25, 2024 in Los Angeles, California.\r\nRonald Martinez/Getty Images… [+10776 chars]'}, 
-            {'source': {'id': 'cbs-news', 'name': 'CBS News'}, 'author': 'Meredith Gordon', 'title': 'How to watch the Boston Celtics vs. Miami Heat NBA Playoffs game tonight: Game 3 livestream options, start time, more', 'description': "Game 3 of the Celtics vs. Heat NBA Playoffs series is can't-miss basketball. Here's how and when to watch tonight.", 'url': 'https://www.cbsnews.com/essentials/how-to-watch-tonights-boston-celtics-vs-miami-heat-nba-playoffs-game-3/', 'urlToImage': 'https://assets1.cbsnewsstatic.com/hub/i/r/2024/04/26/09ef6820-2df5-4120-96f9-5d8884a6543e/thumbnail/1200x630/6d15d84003a1d8c8726ff8e1dfb5501b/gettyimages-2149460985-1.jpg?v=63c131a0051f3823d92b0d1dffb5e0e4', 'publishedAt': '2024-04-27T04:47:00+00:00', 'content': 'Tyler Herro #14 of the Miami Heat looks at his bench after making a three-point basket against the Boston Celtics during the second quarter of game two of the Eastern Conference First Round Playoffs … [+8404 chars]'}, 
-            {'source': {'id': 'cbs-news', 'name': 'CBS News'}, 'author': 'Meredith Gordon', 'title': 'How to watch the OKC Thunder vs. New Orleans Pelicans NBA Playoffs game tonight: Game 3 livestream options, more', 'description': "Here's how and when to watch Game 3 of the OKC Thunder vs. New Orleans Pelicans NBA Playoffs series.", 'url': 'https://www.cbsnews.com/essentials/how-to-watch-todays-okc-thunder-vs-new-orleans-pelicans-nba-playoffs-game-3/', 'urlToImage': 'https://assets3.cbsnewsstatic.com/hub/i/r/2024/04/26/85e98138-3298-4ec7-a1a7-e5030b12aa2d/thumbnail/1200x630/a5861ab2092c404f418cfb7687dd2d1c/gettyimages-2150073262-1.jpg?v=63c131a0051f3823d92b0d1dffb5e0e4', 'publishedAt': '2024-04-27T04:10:19+00:00', 'content': 'Oklahoma City Thunder players react from the bench after a three-pointer during game two of the first round of the NBA playoffs against the New Orleans Pelicans at Paycom Center on April 24, 2024 in … [+8574 chars]'}, 
-            {'source': {'id': 'abc-news-au', 'name': 'ABC News (AU)'}, 'author': 'ABC News', 'title': "Joel Embiid fights Bell's palsy to drop NBA playoff career high as Sixers down Knicks", 'description': 'Philadelphia 76ers star Joel Embiid went to the doctors complaining of a migraine prior to the playoffs, only for the diagnosis to be something more sinister that impacts how he looks on the court.', 'url': 'https://www.abc.net.au/news/2024-04-26/nba-playoffs-joel-embiid-bells-palsy-sixers-knicks-game-3/103773714', 'urlToImage': 'https://live-production.wcms.abc-cdn.net.au/d8406c6fa93bfc53f1dd55f9976d5d2a?impolicy=wcms_watermark_news&cropH=2531&cropW=4500&xPos=0&yPos=338&width=862&height=485&imformat=generic', 'publishedAt': '2024-04-26T05:28:24Z', 'content': "<ul><li>In short:\xa0Joel Embiid has been diagnosed with Bell's palsy, a form of facial paralysis, after initially complaining of migraines prior to the NBA playoffs.</li><li>Embiid battled through the … [+2061 chars]"},
-        ]
-TEST_ARTICLES = TEST_ARTICLES + TEST_ARTICLES[::-1]
-TEST_ARTICLES = TEST_ARTICLES * 2
 
 class StatusBar(tk.Frame):
     def __init__(self, root):
@@ -125,14 +58,17 @@ class DropMenu:
 
 
 class MenuFrame(tk.Frame):
-    def __init__(self, root, bg_color, text_color, update_callback, search_callback, latest_callback):
+    def __init__(self, root, bg_color, text_color, category_callback, search_callback, latest_callback):
+        tk.Frame.__init__(self, root, width=200, bg=bg_color)
         self.bg_color = bg_color
         self.text_color = text_color
-        self.update_callback = update_callback
+        self.category_callback = category_callback
         self.search_callback = search_callback
         self.latest_callback = latest_callback
         self.news_type = 1
-        tk.Frame.__init__(self, root, width=200, bg=self.bg_color)
+        self.selected_categories = None
+        self.filter_country = None
+        self.filter_language = None 
         self.pack(side=tk.LEFT, fill=tk.BOTH, expand=True)
         
         # Stylings for widgets
@@ -140,19 +76,19 @@ class MenuFrame(tk.Frame):
         style.configure('W.TButton', background="#27212E", font=('Calibri', 12, 'bold'))
         header_font = ("TkDefaultFont", 10, "underline")
 
-        # Buttons to get latest news
-        self.simple_label = tk.Label(self, text="Simple Search:", bg=self.bg_color, fg=self.text_color, font=header_font)
-        self.simple_label.pack(pady=(20, 5))
-        self.latest_button = ttk.Button(self, text='Get Latest News', style='W.TButton', command=latest_callback, state="disabled")
-        self.latest_button.pack(pady=(10, 5))
+        # # Buttons to get latest news
+        # self.simple_label = tk.Label(self, text="Simple Search:", bg=self.bg_color, fg=self.text_color, font=header_font)
+        # self.simple_label.pack(pady=(20, 5))
+        # self.latest_button = ttk.Button(self, text='Get Latest News', style='W.TButton', command=latest_callback, state="disabled")
+        # self.latest_button.pack(pady=(10, 5))
 
-        # Set a divider between two types of seach
-        separator = ttk.Separator(self, orient='horizontal')
-        separator.pack(fill=tk.X, padx=30, pady=(20, 5))
+        # # Set a divider between two types of seach
+        # separator = ttk.Separator(self, orient='horizontal')
+        # separator.pack(fill=tk.X, padx=30, pady=(20, 5))
 
         # Search Query
-        self.advanced_label = tk.Label(self, text="Advanced Search:", bg=self.bg_color, fg=self.text_color, font=header_font)
-        self.advanced_label.pack(pady=(20, 5))
+        # self.advanced_label = tk.Label(self, text="Advanced Search:", bg=self.bg_color, fg=self.text_color, font=header_font)
+        # self.advanced_label.pack(pady=(20, 5))
         self.query_label = tk.Label(self, text="Search query:", bg=self.bg_color, fg=self.text_color)
         self.query_label.pack(pady=(10, 5))
         self.query_entry = tk.Entry(self)
@@ -189,8 +125,20 @@ class MenuFrame(tk.Frame):
         self.search_button = ttk.Button(self, text='Run Search', style='W.TButton', command=search_callback, state="normal")
         self.search_button.pack(pady=(20, 5))
 
+        self.test_button = ttk.Button(self, text='Test', style='W.TButton', command=self.test_updates, state="normal")
+        self.test_button.pack(pady=(20, 5))
+
     def update_type(self):
         self.news_type = self.type_var.get()
+
+    def test_updates(self):
+        language = self.language_menu.option_var.get()
+        if language:
+            print(f"add param {language}")
+
+        country = self.country_menu.option_var.get()
+        if country:
+            print(f"add param {country}")
 
     def create_category_menu(self):
         categories = CATEGORY_OPTIONS
@@ -201,7 +149,7 @@ class MenuFrame(tk.Frame):
             v = tk.BooleanVar(value=True)
             cb = tk.Checkbutton(self, variable=v, text=categories[i].title(), width=15, anchor=tk.W, 
                                 bg=self.bg_color, fg=self.text_color, selectcolor='black',
-                                command=self.update_callback).pack()
+                                command=self.category_callback).pack()
             check_buttons.append(cb)
             check_vars.append(v)
 
@@ -218,6 +166,7 @@ class MenuFrame(tk.Frame):
 
         self.country_menu = ttk.Combobox(self, width=5, textvariable=country_var, values=options)
         self.country_menu.pack()
+        self.country_var = country_var
 
     def create_language_menu(self):
         self.language_label = tk.Label(self, text="Select Language:", bg=self.bg_color, fg=self.text_color)
@@ -230,6 +179,7 @@ class MenuFrame(tk.Frame):
 
         self.language_menu = ttk.Combobox(self, width=5, textvariable=language_var, values=options)
         self.language_menu.pack()
+        self.language_var = language_var
 
 
 class articleGroup:
@@ -294,7 +244,10 @@ class articleGroup:
     def create_description(self):
         # Remove html tags
         pattern = r'<[^>]*>'
-        text = re.sub(pattern, '', self.description)
+        try:
+            text = re.sub(pattern, '', self.description)
+        except:
+            text = self.description
 
         # GUI label
         self.description_label = tk.Label(self.root, text=text, bg=self.bg_color, anchor="w", justify="left", wraplength=self.wrap_len)
@@ -374,8 +327,8 @@ class GraphFrame():
         for article in data:
             # Get source name and article length
             source = article["source"]["name"]
-            length = self.get_article_length(article['content'])
-            published = article["publishedAt"]
+            length = self.get_article_length(article.get('content', ''))
+            published = article.get("publishedAt", None)
 
             stats.append([source, length, published])
 
@@ -424,7 +377,10 @@ class GraphFrame():
         pattern = r"\[\+\d+\s+\w+\]"
 
         p = re.compile(pattern)
-        match = p.search(content)
+        try:
+            match = p.search(content)
+        except:
+            match = None
 
         if match:
             # Extract number from char counter
@@ -439,8 +395,11 @@ class GraphFrame():
 
         else:
             extra_count = 0
-            content_count = len(content)
-        
+            try:
+                content_count = len(content)
+            except:
+                content_count = 0
+
         return content_count + extra_count
     
     def create_vbar_plot(self, df, x, y, mean, name):
@@ -542,7 +501,6 @@ class ContentFrame(tk.Frame):
         ##### Content
         self.wrap_len = 700
         self.articles = {}
-        # self.data = [data for data in TEST_ARTICLES if data['title'] != '[Removed]']
 
     def show_results(self):
         if self.root.downloaded_results:
@@ -698,7 +656,7 @@ class MainApp:
 
         # Menu
         self.left_frame = MenuFrame(root, bg_color="#27212E", text_color="#FFFFFF", 
-                                    update_callback=self.update_category_selections,
+                                    category_callback=self.update_category_selections,
                                     search_callback=self.search_news,
                                     latest_callback=self.latest_news)
         self.left_frame.pack_propagate(False)
@@ -713,15 +671,20 @@ class MainApp:
         self.left_frame.key_entry.delete(0, tk.END)
 
     def update_category_selections(self):
-        options = [str(var.get()) for var in self.left_frame.check_vars if var.get()]
-        self.category_label.config(text="Selected options: " + ", ".join(options))
-    
+        options = [var.get() for var in self.left_frame.check_vars]
+
+        if all(options):
+            self.left_frame.selected_categories = None
+        else:
+            selected_categories = [category for category, selected in zip(CATEGORY_OPTIONS, options) if selected]
+            self.left_frame.selected_categories = selected_categories
+
     def update_combobox_selection(self, event):
         country_var = self.left_frame.country_menu.option_var.get()
-        self.country_label.config(text=f"Country: {country_var}")
+        # self.country_label.config(text=f"Country: {country_var}")
 
         language_var = self.left_frame.language_menu.option_var.get()
-        self.language_label.config(text=f"Language: {language_var}")
+        # self.language_label.config(text=f"Language: {language_var}")
 
     def latest_news(self):
         self.root.statusbar.set(text="Downloading from NewsAPI ...")
@@ -779,14 +742,18 @@ class MainApp:
         # Add params
         params = {}
 
-        # Check if query has been entered
+        # Check if params are entered
         query_content = self.left_frame.query_entry.get()
         if query_content:
             params["q"] = self.left_frame.query_entry.get()
-        else:
-            self.root.statusbar.set(text="Query required, please enter and retry search.")
-
-        # TO-DO: updates for category, country, language
+        
+        language = self.left_frame.language_menu.option_var.get()
+        if language:
+            params["language"] = language
+        
+        country = self.left_frame.country_menu.option_var.get()
+        if country:
+            params["country"] = country
 
         if len(params) > 0:
             news_obj.add_params(params)
@@ -816,6 +783,8 @@ class MainApp:
                 status_text = results.get("message", "Error")
             # TO-DO: clean up error message
                 self.root.statusbar.set(text=status_text)
+        else:
+            self.root.statusbar.set(text="Not enough search parameters entered. Try again.")
 
     def reset_content(self):
         # Clear results
@@ -836,25 +805,6 @@ class MainApp:
 
         self.right_frame.analytics_content = None
         self.right_frame.show_content = True
-
-    def fetch_news_test(self):
-        self.root.statusbar.set(text="Downloading from Test Data ...")
-
-        # Clear existing data and set buttons to default state
-        self.reset_content()
-
-        # Get new results
-        self.root.downloaded_results = TEST_ARTICLES
-        self.root.downloaded_results = [article for article in self.root.downloaded_results if article["source"]["name"] != "[Removed]"]
-        self.right_frame.page = 0
-
-        # Show new results
-        self.right_frame.show_results()
-        self.right_frame.button_analytics["state"] = "normal"
-        if len(self.root.downloaded_results) > self.root.page_len:
-            self.right_frame.button_next["state"] = "normal"
-
-        self.root.statusbar.clear()
 
     def display_results(self):
         self.display = {}
