@@ -10,6 +10,7 @@ class Scraper:
         self.html = None
         self.page = None
         self.socials = []
+        self.error = None
 
     def make_request(self):
         if self.url != "https://removed.com":
@@ -17,6 +18,7 @@ class Scraper:
                 self.html = requests.get(self.url)
                 self.page = BeautifulSoup(self.html.content, "html.parser")
             except requests.RequestException as e:
+                self.error = e
                 print(f"Error making request: {e}")
 
     def check_status(self):
@@ -25,7 +27,7 @@ class Scraper:
         return self.html.status_code
 
     def count_adverts(self):
-        status_code = self.handle_request_errors()
+        status_code = self.check_status()
         if status_code == 403:
             # Specify if site scraping is blocked instead of an error.
             self.ad_count = -1
@@ -37,7 +39,7 @@ class Scraper:
             self.ad_count = len(ads)
         
     def count_scripts(self, script_type="hidead"):
-        status_code = self.handle_request_errors()
+        status_code = self.check_status()
         if status_code == 403:
             # Specify if site scraping is blocked instead of an error.
             self.script_count = -1
