@@ -154,9 +154,8 @@ class News():
             print("Error:")
             print(result["code"])
             print(result["message"])
-            return None
-        else:
-            return result
+            
+        return result
 
 
 class TopHeadlines(News):
