@@ -9,8 +9,10 @@ import plotly.express as px
 import pandas as pd
 
 from tkinter import ttk
-from newsapi import News, TopHeadlines
 from PIL import ImageTk, Image
+
+from newsapi import News, TopHeadlines
+from scraper import Scraper
 
 COUNTRY_OPTIONS = ['ae', 'ar', 'at', 'au', 'be', 'bg', 'br', 'ca', 'ch', 'cn', 'co', 'cu', 'cz', 'de',
                    'eg', 'fr', 'gb', 'gr', 'hk', 'hu', 'id', 'ie', 'il', 'in', 'it', 'jp', 'kr', 'lt', 
@@ -94,20 +96,6 @@ class MenuFrame(tk.Frame):
         self.query_entry = tk.Entry(self)
         self.query_entry.pack()
 
-        # Category options
-        self.category_label = tk.Label(self, text="Select Categories:", bg=self.bg_color, fg=self.text_color)
-        self.category_label.pack(pady=(20, 5))
-
-        self.create_category_menu()
-
-        # Dropdown menus for country and language
-        self.country_menu = DropMenu(self, text="Country (optional):", options=COUNTRY_OPTIONS)
-        self.language_menu = DropMenu(self, text="Language (optional):", options=LANGUAGE_OPTIONS)
-        
-        for menu in [self.country_menu, self.language_menu]:
-            menu.create_label()
-            menu.create_menu()
-
         # Search type
         self.type_label = tk.Label(self, text="Search Type:", bg=self.bg_color, fg=self.text_color)
         self.type_label.pack(pady=(20, 5))
@@ -121,9 +109,23 @@ class MenuFrame(tk.Frame):
                                  variable=self.type_var, value=2, command=self.update_type)
         self.r2.pack()
 
+        # Dropdown menus for country and language
+        self.country_menu = DropMenu(self, text="Country (optional):", options=COUNTRY_OPTIONS)
+        self.language_menu = DropMenu(self, text="Language (Top Headlines only):", options=LANGUAGE_OPTIONS)
+        
+        for menu in [self.country_menu, self.language_menu]:
+            menu.create_label()
+            menu.create_menu()
+
         # Run search version of news
         self.search_button = ttk.Button(self, text='Run Search', style='W.TButton', command=search_callback, state="normal")
         self.search_button.pack(pady=(20, 5))
+
+        # Category options
+        self.category_label = tk.Label(self, text="Filter Categories:", bg=self.bg_color, fg=self.text_color)
+        self.category_label.pack(pady=(20, 5))
+
+        self.create_category_menu()
 
         self.test_button = ttk.Button(self, text='Test', style='W.TButton', command=self.test_updates, state="normal")
         self.test_button.pack(pady=(20, 5))
@@ -206,9 +208,11 @@ class articleGroup:
         self.create_source()
         self.create_timestamp()
 
+        self.create_scrape_row()
+
         # Formtting
         self.spacing = tk.Label(self.root, text="", anchor="w", justify="left", bg=self.spacing_color)
-        self.spacing.grid(row=self.row+3, column=0, columnspan=4, sticky='nsew')
+        self.spacing.grid(row=self.row+4, column=0, columnspan=4, sticky='nsew')
 
     def create_thumbnail(self):
         # Download image
@@ -221,7 +225,7 @@ class articleGroup:
 
         # GUI img label
         self.img_label = tk.Label(self.root, image=self.img, bg=self.bg_color)
-        self.img_label.grid(row=self.row, column=0, rowspan=4, sticky='nsew')
+        self.img_label.grid(row=self.row, column=0, rowspan=5, sticky='nsew')
         self.img_label.image = self.img
 
     def create_news_title(self):
@@ -241,6 +245,18 @@ class articleGroup:
         self.title_label.grid(row=self.row, column=1, columnspan=3, sticky='nsew')
         self.title_label.bind("<ButtonRelease-1>", lambda e: web_callback(self.url))
 
+    def scrape_content(self):
+        url = self.url
+        
+        scraper = Scraper(url)
+        scraper.make_request()
+        scraper.count_adverts()
+        scraper.count_scripts()
+        scraper.get_linked_data()
+        scraper.get_socials()
+
+        self.scraped = scraper
+
     def create_description(self):
         # Remove html tags
         pattern = r'<[^>]*>'
@@ -252,6 +268,29 @@ class articleGroup:
         # GUI label
         self.description_label = tk.Label(self.root, text=text, bg=self.bg_color, anchor="w", justify="left", wraplength=self.wrap_len)
         self.description_label.grid(row=self.row+1, column=1, columnspan=3, sticky='nsew')
+
+    def create_scrape_row(self):
+        # Get content
+        self.scrape_content()
+
+        scraped_content = self.scraped
+
+        # Socials
+        socials = getattr(scraped_content, 'socials', [""])
+        socials_text = "Socials: " + ", ".join(socials)
+        self.socials = tk.Label(self.root, text=socials_text, anchor=tk.W, justify=tk.LEFT, bg=self.bg_color)
+        self.socials.grid(row=self.row+3, column=1, sticky='nsew')
+
+        # Keywords
+        keywords = getattr(scraped_content, 'keywords', [""])
+        keywords_text = "Keywords: " + ", ".join(keywords)
+        self.keywords = tk.Label(self.root, text=keywords_text, anchor=tk.W, justify=tk.LEFT, bg=self.bg_color)
+        self.keywords.grid(row=self.row+3, column=2, sticky='nsew')
+
+        # Keywords
+        ads = getattr(scraped_content, 'ad_count', 0)
+        self.ads = tk.Label(self.root, text=f"Ads: {ads}", anchor=tk.W, justify=tk.LEFT, bg=self.bg_color)
+        self.ads.grid(row=self.row+3, column=3, sticky='nsew')
 
     def create_author(self):
         text = f"Author: {self.author}"
@@ -525,7 +564,7 @@ class ContentFrame(tk.Frame):
                     root=target,
                     bg_color="#FFF8E4",
                     spacing_color=self.bg_color,
-                    row=4*counter,
+                    row=5*counter,
                     url=a.get('url', None),
                     title=a.get('title', None),
                     description=a.get('content', None),
@@ -750,10 +789,12 @@ class MainApp:
         language = self.left_frame.language_menu.option_var.get()
         if language:
             params["language"] = language
+            print(params)
         
         country = self.left_frame.country_menu.option_var.get()
         if country:
             params["country"] = country
+            print(params)
 
         if len(params) > 0:
             news_obj.add_params(params)
