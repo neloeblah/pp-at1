@@ -289,8 +289,9 @@ class articleGroup:
 
         # Keywords
         ads = getattr(scraped_content, 'ad_count', 0)
-        self.ads = tk.Label(self.root, text=f"Ads: {ads}", anchor=tk.W, justify=tk.LEFT, bg=self.bg_color)
-        self.ads.grid(row=self.row+3, column=3, sticky='nsew')
+        self.ads_label = tk.Label(self.root, text=f"Ads: {ads}", anchor=tk.W, justify=tk.LEFT, bg=self.bg_color)
+        self.ads_label.grid(row=self.row+3, column=3, sticky='nsew')
+        self.ads_count = ads
 
     def create_author(self):
         text = f"Author: {self.author}"
