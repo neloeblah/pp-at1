@@ -66,8 +66,11 @@ class Scraper:
             return None
 
     def get_linked_data(self):
-        ld = self.page.find("script", type="application/ld+json")
-
+        try:
+            ld = self.page.find("script", type="application/ld+json")
+        except:
+            ld = None
+            
         if ld:
             extract = json.loads(ld.string)
             
