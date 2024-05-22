@@ -19,7 +19,7 @@ class Scraper:
                 self.page = BeautifulSoup(self.html.content, "html.parser")
             except requests.RequestException as e:
                 self.error = e
-                print(f"Error making request: {e}")
+                # print(f"Error making request: {e}")
 
     def check_status(self):
         if not self.html:
@@ -31,7 +31,7 @@ class Scraper:
         if status_code == 403:
             # Specify if site scraping is blocked instead of an error.
             self.ad_count = -1
-        elif self.html.status_code == 200:
+        elif status_code == 200:
             # Search for ad tags
             pattern = re.compile(r"_ad|-ad|advert|adwrap|^ad-|^ad_", re.IGNORECASE)
             ads = self.page.find_all('div', class_=lambda c: c and pattern.search(c))
@@ -54,19 +54,24 @@ class Scraper:
                     self.script_count += 1
 
     def extract_content(self, prop=None, attrs=None):
-        tag = None
-        if prop:
-            tag = self.page.find('meta', property=prop)
-        elif attrs:
-            tag = self.page.find('meta', attrs=attrs)
-        
+        try:
+            if prop:
+                tag = self.page.find('meta', property=prop)
+            elif attrs:
+                tag = self.page.find('meta', attrs=attrs)
+        except:
+            tag = None
+
         if tag:
             return tag.get("content", None)
         else:
             return None
 
     def get_linked_data(self):
-        ld = self.page.find("script", type="application/ld+json")
+        try:
+            ld = self.page.find("script", type="application/ld+json")
+        except:
+            ld = None
 
         if ld:
             extract = json.loads(ld.string)
@@ -106,8 +111,11 @@ class Scraper:
             self.socials.append(f"x.com/{creator}")
 
     def get_mastodon(self):
-        mastodon_pattern = re.compile(r'.*mastodon\.social/@.*', re.IGNORECASE)
-        mastodon = self.page.find('link', href=mastodon_pattern)
+        try:
+            mastodon_pattern = re.compile(r'.*mastodon\.social/@.*', re.IGNORECASE)
+            mastodon = self.page.find('link', href=mastodon_pattern)
+        except:
+            mastodon = None
 
         if mastodon:
             at = mastodon.get("content", None)

@@ -15,12 +15,18 @@ class News():
             "apiKey": News.__api_key
         }
         self.end_point = "/v2/everything"
+        self.removed_params = []
+        self.errors = None
+        self.warnings = []
 
     def __remove_invalid_parameters(self, new_params, valid_params):
         # Remove parameters not accepted by API
         removed_params = new_params - valid_params
-        for p in removed_params:
-            print(f"Removed invalid parameter '{p}'.")
+        
+        # for p in removed_params:
+        #     print(f"Removed invalid parameter '{p}'.")
+
+        self.removed_params += removed_params
 
         return new_params & valid_params
     
@@ -29,12 +35,14 @@ class News():
         if len(new_params_set & exclusive_params) > 1:
             removed_country = new_params_set.discard("country")
             if removed_country != None:
-                print("Removed 'country' due to conflicting parameters.")
+                self.removed_params.append('country')
+                # print("Removed 'country' due to conflicting parameters.")
 
             if len(new_params_set & exclusive_params) > 1:
                 removed_category = new_params_set.discard("category")
                 if removed_category != None:
-                    print("Removed 'category' due to conflicting parameters.")
+                    self.removed_params.append('category')
+                    # print("Removed 'category' due to conflicting parameters.")
         
         return new_params_set
 
@@ -54,13 +62,14 @@ class News():
             for p in new_params_set:
                 self.__params[p] = new_params_dict[p]
         else:
-            print("No valid parameters available to add")
+            self.errors = "No valid parameters available to add"
 
     def check_param_entries(self):
         # Query limit
         if len(self.__params.get("q", "")) > 500:
             self.__params["q"] = self.__params["q"][:500]
-            print("q length too long, limited to first 500 characters.")
+            self.warnings.append("'q' limited to 500 characters. ")
+            # print("q length too long, limited to first 500 characters.")
 
         # Sources  limit
         def __limit_sources(sources, cutoff=19):
@@ -71,7 +80,8 @@ class News():
 
         if self.__params.get("sources", "").count(",") > 19:
             self.__params["sources"] = __limit_sources(self.__params["sources"])
-            print("Too many sources, reduced to 20.")
+            self.warnings.append("'sources' limited to 20.")
+            # print("Too many sources, reduced to 20.")
 
         # Check dates
         def __test_date(date_str):
@@ -87,14 +97,16 @@ class News():
 
             if not date_flag and date_str != None:
                 del self.__params[d]
-                print("Invalid date format entered for '{d}', parameter removed.")
+                self.warnings.append("Invalid 'd' removed. ")
+                # print(f"Invalid date format entered for '{d}', parameter removed.")
 
         # Language options
         languages = ['ar', 'de', 'en', 'es', 'fr', 'he', 'it', 'nl', 'no', 'pt', 'ru', 'sv', 'ud', 'zh']
         lang_str = self.__params.get("language", None)
         if lang_str not in languages and lang_str != None:
             del self.__params["language"]
-            print("Invalid language entered, parameter removed.")
+            self.warnings.append("Invalid 'language' removed. ")
+            # print("Invalid language entered, parameter removed.")
 
         # Country options
         countries = [
@@ -106,34 +118,39 @@ class News():
         country_str = self.__params.get("country", None)
         if country_str not in countries and country_str != None:
             del self.__params["country"]
-            print("Invalid country entered, parameter removed.")
+            self.warnings.append("Invalid 'country' removed. ")
+            # print("Invalid country entered, parameter removed.")
 
         # Category options
         categories = ['business', 'entertainment', 'general', 'health', 'science', 'sports', 'technology']
         category_str = self.__params.get("category", None)
         if category_str not in categories and category_str != None:
             del self.__params["category"]
-            print("Invalid category entered, parameter removed.")
+            self.warnings.append("Invalid 'category' removed. ")
+            # print("Invalid category entered, parameter removed.")
 
         # sortBy options
         sort_by = ["relevancy", "popularity", "publishedAt"]
         sort_str = self.__params.get("sortBy", None)
         if sort_str not in sort_by and sort_str != None:
             self.__params["sortBy"] = "publishedAt"
-            print("sortBy invalid, set to default 'publishedAt'.")
+            self.warnings.append("Invalid 'publishedAt' removed. ")
+            # print("sortBy invalid, set to default 'publishedAt'.")
 
         # pageSize limit
         page_size = self.__params.get("pageSize", 100)
         if page_size > 100 or page_size < 0 or type(page_size) == str:
             self.__params["pageSize"] = 100
-            print("pageSize invalid, set to default 100.")
+            self.warnings.append("Invalid 'pageSize' removed. ")
+            # print("pageSize invalid, set to default 100.")
 
         # Check page number
         try:
             if self.__params.get("page", None) != None: int(self.__params["page"])
         except:
             self.__params["page"] = 1
-            print("page invalid, set to default 1.")
+            self.warnings.append("Invalid 'page', reset to 1. ")
+            # print("page invalid, set to default 1.")
 
     def add_params(self, new_params_dict):
         # Pass params to setter with validation checks
@@ -150,11 +167,14 @@ class News():
         result = response.json()
 
         # Check status
-        if result["status"] == "error":
-            print("Error:")
-            print(result["code"])
-            print(result["message"])
-            
+        # if result["status"] == "error":
+        #     print("Error:")
+        #     print(result["code"])
+        #     print(result["message"])
+        #     return None
+        # else:
+        #     return result
+        
         return result
 
 
