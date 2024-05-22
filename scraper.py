@@ -19,7 +19,7 @@ class Scraper:
                 self.page = BeautifulSoup(self.html.content, "html.parser")
             except requests.RequestException as e:
                 self.error = e
-                print(f"Error making request: {e}")
+                # print(f"Error making request: {e}")
 
     def check_status(self):
         if not self.html:
