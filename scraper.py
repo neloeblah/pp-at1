@@ -54,12 +54,14 @@ class Scraper:
                     self.script_count += 1
 
     def extract_content(self, prop=None, attrs=None):
-        tag = None
-        if prop:
-            tag = self.page.find('meta', property=prop)
-        elif attrs:
-            tag = self.page.find('meta', attrs=attrs)
-        
+        try:
+            if prop:
+                tag = self.page.find('meta', property=prop)
+            elif attrs:
+                tag = self.page.find('meta', attrs=attrs)
+        except:
+            tag = None
+
         if tag:
             return tag.get("content", None)
         else:
@@ -70,7 +72,7 @@ class Scraper:
             ld = self.page.find("script", type="application/ld+json")
         except:
             ld = None
-            
+
         if ld:
             extract = json.loads(ld.string)
             
@@ -109,8 +111,11 @@ class Scraper:
             self.socials.append(f"x.com/{creator}")
 
     def get_mastodon(self):
-        mastodon_pattern = re.compile(r'.*mastodon\.social/@.*', re.IGNORECASE)
-        mastodon = self.page.find('link', href=mastodon_pattern)
+        try:
+            mastodon_pattern = re.compile(r'.*mastodon\.social/@.*', re.IGNORECASE)
+            mastodon = self.page.find('link', href=mastodon_pattern)
+        except:
+            mastodon = None
 
         if mastodon:
             at = mastodon.get("content", None)
