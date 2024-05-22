@@ -1,10 +1,7 @@
 import unittest
 import tkinter as tk
 
-from unittest.mock import patch, Mock
-
 from app import MainApp  
-
 
 class TestGUI(unittest.TestCase):
     def setUp(self):
