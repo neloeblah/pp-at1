@@ -60,8 +60,8 @@ class DropMenu:
 
 
 class MenuFrame(tk.Frame):
-    def __init__(self, root, bg_color, text_color, category_callback, search_callback, latest_callback):
-        tk.Frame.__init__(self, root, width=200, bg=bg_color)
+    def __init__(self, root, bg_color, text_color, width, category_callback, search_callback, latest_callback):
+        tk.Frame.__init__(self, root, width=width, bg=bg_color)
         self.bg_color = bg_color
         self.text_color = text_color
         self.category_callback = category_callback
@@ -276,14 +276,22 @@ class articleGroup:
         scraped_content = self.scraped
 
         # Socials
-        socials = getattr(scraped_content, 'socials', [""])
-        socials_text = "Socials: " + ", ".join(socials)
+        socials = getattr(scraped_content, 'socials', None)
+        socials_text = "Socials: "
+
+        socials = [s for s in socials if s]
+        if len(socials) > 0:
+            socials_text += ", ".join(socials)
         self.socials = tk.Label(self.root, text=socials_text, anchor=tk.W, justify=tk.LEFT, bg=self.bg_color)
         self.socials.grid(row=self.row+3, column=1, sticky='nsew')
 
         # Keywords
-        keywords = getattr(scraped_content, 'keywords', [""])
-        keywords_text = "Keywords: " + ", ".join(keywords)
+        keywords = getattr(scraped_content, 'keywords', None)
+        keywords_text = "Keywords: "
+        if isinstance(keywords, list):
+            keywords_text += ", ".join(keywords)
+        elif isinstance(keywords, str):
+            keywords_text += keywords
         self.keywords = tk.Label(self.root, text=keywords_text, anchor=tk.W, justify=tk.LEFT, bg=self.bg_color)
         self.keywords.grid(row=self.row+3, column=2, sticky='nsew')
 
@@ -490,7 +498,7 @@ class GraphFrame():
 
 
 class ContentFrame(tk.Frame):
-    def __init__(self, root, bg_color, text_color):
+    def __init__(self, root, bg_color, text_color, width):
         self.root = root
         self.bg_color = bg_color
         self.text_color = text_color
@@ -498,7 +506,7 @@ class ContentFrame(tk.Frame):
         self.page = None
         self.analytics_content = None
         self.show_content = True
-        tk.Frame.__init__(self, root, width=800, bg=bg_color)
+        tk.Frame.__init__(self, root, width=width, bg=bg_color)
         self.pack(side=tk.RIGHT, fill=tk.BOTH, expand=True)
         
         # Header
@@ -539,7 +547,7 @@ class ContentFrame(tk.Frame):
         self.button_analytics.pack(in_=self.display, side=tk.BOTTOM, pady=10)
 
         ##### Content
-        self.wrap_len = 700
+        self.wrap_len = width - 100
         self.articles = {}
 
     def show_results(self):
@@ -685,7 +693,10 @@ class MainApp:
 
     def __init__(self, root):
         self.root = root
-        self.root.geometry("1100x750")
+        
+        width = 1200
+        height = 830
+        self.root.geometry(f"{width}x{height}+0+0")
         self.root.title("News Aggregator")
         self.root.news = None
         self.root.downloaded_results = None
@@ -695,7 +706,8 @@ class MainApp:
         self.root.statusbar.pack(side=tk.BOTTOM, fill=tk.X)
 
         # Menu
-        self.left_frame = MenuFrame(root, bg_color="#27212E", text_color="#FFFFFF", 
+        menu_width = 200
+        self.left_frame = MenuFrame(root, bg_color="#27212E", text_color="#FFFFFF", width=menu_width,
                                     category_callback=self.update_category_selections,
                                     search_callback=self.search_news,
                                     latest_callback=self.latest_news)
@@ -703,7 +715,8 @@ class MainApp:
         # self.left_frame.key_entry.bind("<Return>", self.set_api_key)
 
         # Content
-        self.right_frame = ContentFrame(root, bg_color="#FFF1C8", text_color="#000000")
+        content_width = width - menu_width
+        self.right_frame = ContentFrame(root, bg_color="#FFF1C8", text_color="#000000", width=content_width)
         self.right_frame.pack_propagate(False)
 
     def set_api_key(self, event):
