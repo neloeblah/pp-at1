@@ -31,7 +31,7 @@ class Scraper:
         if status_code == 403:
             # Specify if site scraping is blocked instead of an error.
             self.ad_count = -1
-        elif self.html.status_code == 200:
+        elif status_code == 200:
             # Search for ad tags
             pattern = re.compile(r"_ad|-ad|advert|adwrap|^ad-|^ad_", re.IGNORECASE)
             ads = self.page.find_all('div', class_=lambda c: c and pattern.search(c))
