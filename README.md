@@ -22,7 +22,7 @@ This News Aggregator project is a Python-based application built with Tkinter fo
 
 1. **Clone the repository:**
    ```sh
-   git clone https://github.com/your-username/pp-at1.git
+   git clone https://github.com/neloeblah/pp-at1.git
    cd pp-at1
    ```
 
@@ -44,8 +44,8 @@ This News Aggregator project is a Python-based application built with Tkinter fo
     - Click the "Search" button to fetch news headlines.
 
 2. **Navigate Results:**
-    - Use the "Next" and "Previous" buttons to cycle through the news articles.
-    - Toggle between article content and analytics using the "Toggle" button.
+    - Use the "Next" and "Last" buttons to cycle through the news articles.
+    - Toggle between article content and analytics using the "Analytics" button.
 
 3. **View Analytics:**
     - The application displays graphs showing the top news sources, article lengths per source, and a timeline of article publication.
