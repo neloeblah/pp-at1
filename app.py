@@ -86,11 +86,11 @@ class MenuFrame(tk.Frame):
         self.query_label = tk.Label(self, text="Search query:", bg=self.bg_color, fg=self.text_color)
         self.query_label.pack(pady=(10, 5))
         self.query_entry = tk.Entry(self)
-        self.query_entry.pack()
+        self.query_entry.pack(pady=(0, 5))
 
         # Choose search type - non-optional parameter
-        self.type_label = tk.Label(self, text="Search Type:", bg=self.bg_color, fg=self.text_color)
-        self.type_label.pack(pady=(20, 5))
+        # self.type_label = tk.Label(self, text="Search Type:", bg=self.bg_color, fg=self.text_color)
+        # self.type_label.pack(pady=(20, 5))
 
         # Default search type to "Everything" (more comprehensive)
         self.type_var = tk.IntVar(value=1)
@@ -103,42 +103,47 @@ class MenuFrame(tk.Frame):
                                  variable=self.type_var, value=2, command=self.update_type)
         self.r2.pack()
 
+        # Set a divider to mark optional parameters
+        separator = ttk.Separator(self, orient='horizontal')
+        separator.pack(fill=tk.X, padx=30, pady=(20, 0))
+        self.optional_label = tk.Label(self, text="Advanced Search:", bg=self.bg_color, fg=self.text_color)
+        self.optional_label.pack(pady=(20, 0))
+
         # Dropdown menus for country and language
-        self.country_menu = DropMenu(self, text="Country (optional):", options=COUNTRY_OPTIONS)
-        self.language_menu = DropMenu(self, text="Language (Top Headlines only):", options=LANGUAGE_OPTIONS)
+        self.country_menu = DropMenu(self, text="Country (Top Headlines only):", pady=(10, 0), options=COUNTRY_OPTIONS)
+        self.language_menu = DropMenu(self, text="Language:", pady=(10, 0), options=LANGUAGE_OPTIONS)
         
         for menu in [self.country_menu, self.language_menu]:
             menu.create_label()
             menu.create_menu()
 
+        # Time period entries
+        self.time_from_label = tk.Label(self, text="From (YYYY-MM-DD):", bg=self.bg_color, fg=self.text_color)
+        self.time_from_label.pack(pady=(10, 5))
+        self.time_from_entry = tk.Entry(self)
+        self.time_from_entry.pack()
+
+        self.time_to_label = tk.Label(self, text="To (YYYY-MM-DD):", bg=self.bg_color, fg=self.text_color)
+        self.time_to_label.pack(pady=(10, 5))
+        self.time_to_entry = tk.Entry(self)
+        self.time_to_entry.pack()
+
+        # Category options
+        self.category_label = tk.Label(self, text="Categories (Top Headlines only):", bg=self.bg_color, fg=self.text_color)
+        self.category_label.pack(pady=(10, 5))
+
+        self.create_category_menu()
+
         # Button to run search
         self.search_button = ttk.Button(self, text='Run Search', style='W.TButton', command=search_callback, state="normal")
         self.search_button.pack(pady=(20, 5))
 
-        # # Set a divider between two types of seach
-        # separator = ttk.Separator(self, orient='horizontal')
-        # separator.pack(fill=tk.X, padx=30, pady=(20, 5))
-
-        # Category options
-        self.category_label = tk.Label(self, text="Filter Categories:", bg=self.bg_color, fg=self.text_color)
-        self.category_label.pack(pady=(20, 5))
-
-        self.create_category_menu()
-
-        self.test_button = ttk.Button(self, text='Test', style='W.TButton', command=self.test_updates, state="normal")
-        self.test_button.pack(pady=(20, 5))
+        # Set a divider to mark filters section
+        separator = ttk.Separator(self, orient='horizontal')
+        separator.pack(fill=tk.X, padx=30, pady=(20, 0))
 
     def update_type(self):
         self.news_type = self.type_var.get()
-
-    def test_updates(self):
-        language = self.language_menu.option_var.get()
-        if language:
-            print(f"add param {language}")
-
-        country = self.country_menu.option_var.get()
-        if country:
-            print(f"add param {country}")
 
     def create_category_menu(self):
         categories = CATEGORY_OPTIONS
@@ -247,7 +252,6 @@ class articleGroup:
         self.title_label.grid(row=self.row, column=1, columnspan=3, sticky='nsew')
         self.title_label.bind("<ButtonRelease-1>", lambda e: web_callback(self.url))
 
-
     def create_description(self):
         # Remove html tags
         pattern = r'<[^>]*>'
@@ -321,6 +325,10 @@ class articleGroup:
             keywords_text += ", ".join(keywords)
         elif isinstance(keywords, str):
             keywords_text += keywords
+
+        if len(keywords_text) > 60:
+            keywords_text = keywords_text[:-3] + "..."
+
         self.keywords = tk.Label(self.root, text=keywords_text, anchor=tk.W, justify=tk.LEFT, bg=self.bg_color)
         self.keywords.grid(row=self.row+3, column=2, sticky='nsew')
 
@@ -517,15 +525,17 @@ class ContentFrame(tk.Frame):
         self.show_content = True
         self.pack(side=tk.RIGHT, fill=tk.BOTH, expand=True)
         
-        # Header
-        self.header_label = tk.Label(self, text="Content View:", bg=bg_color)
-        self.header_label.pack(pady=(10, 5))
+        # # Header
+        # self.header_label = tk.Label(self, text="Content View:", bg=bg_color)
+        # self.header_label.pack(pady=(10, 5))
 
         ##### Frames layout (navigation and content)
         self.nav = tk.Frame(self, bg=self.bg_color)
         self.nav.pack(side=tk.TOP)
         self.display = tk.Frame(self, bg=self.bg_color)
         self.display.pack()
+        self.end_nav = tk.Frame(self, bg=self.bg_color)
+        self.end_nav.pack(side=tk.BOTTOM)
 
         ##### Navigation
         # Button styles
@@ -552,7 +562,7 @@ class ContentFrame(tk.Frame):
 
         # Analytics button
         self.button_analytics = ttk.Button(self.root, text="Analytics", style='W.TButton', command=self.show_analytics, state=analytics_state)
-        self.button_analytics.pack(in_=self.display, side=tk.BOTTOM, pady=10)
+        self.button_analytics.pack(in_=self.end_nav)
 
         ##### Content
         self.wrap_len = width - 100
@@ -752,6 +762,48 @@ class MainApp:
         language_var = self.left_frame.language_menu.option_var.get()
         # self.language_label.config(text=f"Language: {language_var}")
 
+    def date_check(self, date_string):
+        # Ensure date is in format acceptable for API
+        try:
+            formatted_date = datetime.datetime.strptime(date_string, '%Y-%m-%d')
+            if formatted_date <= datetime.datetime.now():
+                return True
+            else:
+                return False
+        except ValueError:
+            return False
+        
+    def params_check(self):
+        # Check which params are entered
+        params = {}
+
+        query_content = self.left_frame.query_entry.get()
+        if query_content:
+            params["q"] = self.left_frame.query_entry.get()
+        
+        language = self.left_frame.language_menu.option_var.get()
+        if language:
+            params["language"] = language
+        
+        country = self.left_frame.country_menu.option_var.get()
+        if country:
+            params["country"] = country
+
+        time_from = self.left_frame.time_from_entry.get()
+        time_to = self.left_frame.time_to_entry.get()
+
+        if time_from:
+            params["from"] = time_from
+            
+        if time_to:
+            params["to"] = time_to
+
+        if self.left_frame.selected_categories:
+            categories_str = ",".join(self.left_frame.selected_categories)
+            params["category"] = categories_str
+            
+        return params
+
     def search_news(self):
         # Function to run when search button is clicked
         self.root.statusbar.set(text="Downloading from NewsAPI ...")
@@ -766,23 +818,8 @@ class MainApp:
             news_obj = News()
         
         # Add params
-        params = {}
-
-        # Check which params are entered
-        query_content = self.left_frame.query_entry.get()
-        if query_content:
-            params["q"] = self.left_frame.query_entry.get()
+        params = self.params_check()
         
-        language = self.left_frame.language_menu.option_var.get()
-        if language:
-            params["language"] = language
-            print(params)
-        
-        country = self.left_frame.country_menu.option_var.get()
-        if country:
-            params["country"] = country
-            print(params)
-
         if len(params) > 0:
             # Run NewsAPI functions
             news_obj.add_params(params)
@@ -792,17 +829,14 @@ class MainApp:
             if results.get("status", None) == "ok":
                 i = results["totalResults"] # Placeholder if pages function is added
                 
-                # Remove invalid articles
+                # Remove invalid articles and cache
                 articles = [a for a in results["articles"] if a["source"]["name"] != "[Removed]"]
-                
-                # Show number of results in status bar
+                self.root.downloaded_results = articles
+
+                # Show number of results in status text
                 j = len(articles)
-                status_text = f"Retrieved {j} results."
-                self.root.statusbar.set(text=status_text)
-                
-                # Cache full API results
-                self.root.downloaded_results = articles 
-                
+                status_text = f"Retrieved {j} results. "
+
                 # Show first parge of results
                 self.right_frame.page = 0
                 self.right_frame.show_results()
@@ -812,19 +846,30 @@ class MainApp:
                 if len(self.root.downloaded_results) > self.root.page_len:
                     self.right_frame.button_next["state"] = "normal"
 
-            else: 
-                status_text = results.get("message", "Error")
-                # TO-DO: clean up error message
+                # Check if any warnings from News API
+                if news_obj.removed_params:
+                    remove_warning = "Removed params: " + "".join(news_obj.removed_params)
+                    status_text += remove_warning
+
+                if news_obj.warnings:
+                    status_text += "".join(news_obj.warnings)
+
+                # Update status bar
+                self.root.statusbar.set(text=status_text)
+            else:
+                # Show error if API requested but error returned
+                messagebox.showerror("Error", "API could not be accessed. ")
+                status_text = results.get("message", "Error with API, please try again. ")
                 self.root.statusbar.set(text=status_text)
         else:
-            # Show warning message if no parameters entered 
+            # Show warning message if no valid parameters pass UI checks
             if self.left_frame.news_type == 2:
-                pass # Placeholder requires more parameters to be made available
+                status_text = "No valid search parameters entered. Try another search query, language, or country. " 
             else:
-                pass 
-
-            messagebox.showwarning("Warning", "No Search terms entered, try again. ")
-            self.root.statusbar.set(text="Not enough search parameters entered. Try again.")
+                status_text = "No valid search parameters entered. Try another search query. " 
+                
+            messagebox.showwarning("Warning", "No valid search terms entered, try again. ")
+            self.root.statusbar.set(text=status_text)
 
     def reset_content(self):
         # Clear results
