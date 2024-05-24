@@ -1,18 +1,16 @@
 import tkinter as tk
 import datetime
-import os
 import io
 import re
 import requests
 import webbrowser
-import plotly.express as px
-import pandas as pd
 
 from tkinter import ttk, messagebox
 from PIL import ImageTk, Image
 
 from newsapi import News, TopHeadlines
 from scraper import Scraper
+from graph import GraphFrame
 
 COUNTRY_OPTIONS = ['ae', 'ar', 'at', 'au', 'be', 'bg', 'br', 'ca', 'ch', 'cn', 'co', 'cu', 'cz', 'de',
                    'eg', 'fr', 'gb', 'gr', 'hk', 'hu', 'id', 'ie', 'il', 'in', 'it', 'jp', 'kr', 'lt', 
@@ -20,6 +18,7 @@ COUNTRY_OPTIONS = ['ae', 'ar', 'at', 'au', 'be', 'bg', 'br', 'ca', 'ch', 'cn', '
                     'sa', 'se', 'sg', 'si', 'sk', 'th', 'tr', 'tw', 'ua', 'us', 've', 'za']
 LANGUAGE_OPTIONS = ['ar', 'de', 'en', 'es', 'fr', 'he', 'it', 'nl', 'no', 'pt', 'ru', 'sv', 'ud', 'zh']
 CATEGORY_OPTIONS = ['business', 'entertainment', 'general', 'health', 'science', 'sports', 'technology']
+
 
 class StatusBar(tk.Frame):
     def __init__(self, root):
@@ -40,7 +39,7 @@ class StatusBar(tk.Frame):
 
 
 class DropMenu:
-    def __init__(self, root, text, options, pady=(20,5), width=5):
+    def __init__(self, root, text, options, pady=(10, 5), width=5):
         self.root = root
         self.text = text
         self.options = options
@@ -88,10 +87,6 @@ class MenuFrame(tk.Frame):
         self.query_entry = tk.Entry(self)
         self.query_entry.pack(pady=(0, 5))
 
-        # Choose search type - non-optional parameter
-        # self.type_label = tk.Label(self, text="Search Type:", bg=self.bg_color, fg=self.text_color)
-        # self.type_label.pack(pady=(20, 5))
-
         # Default search type to "Everything" (more comprehensive)
         self.type_var = tk.IntVar(value=1)
         self.r1 = tk.Radiobutton(self, text="Everything", bg=self.bg_color, fg=self.text_color,
@@ -110,8 +105,8 @@ class MenuFrame(tk.Frame):
         self.optional_label.pack(pady=(20, 0))
 
         # Dropdown menus for country and language
-        self.country_menu = DropMenu(self, text="Country (Top Headlines only):", pady=(10, 0), options=COUNTRY_OPTIONS)
-        self.language_menu = DropMenu(self, text="Language:", pady=(10, 0), options=LANGUAGE_OPTIONS)
+        self.country_menu = DropMenu(self, text="Country (Top Headlines only):", options=COUNTRY_OPTIONS)
+        self.language_menu = DropMenu(self, text="Language:", options=LANGUAGE_OPTIONS)
         
         for menu in [self.country_menu, self.language_menu]:
             menu.create_label()
@@ -138,7 +133,7 @@ class MenuFrame(tk.Frame):
         self.search_button = ttk.Button(self, text='Run Search', style='W.TButton', command=search_callback, state="normal")
         self.search_button.pack(pady=(20, 5))
 
-        # Set a divider to mark filters section
+        # Set a divider to mark end of section
         separator = ttk.Separator(self, orient='horizontal')
         separator.pack(fill=tk.X, padx=30, pady=(20, 0))
 
@@ -150,6 +145,7 @@ class MenuFrame(tk.Frame):
         check_buttons = []
         check_vars = []
 
+        # Create a var (for backend functions) and checkbutton (for user) for each category
         for i in range(len(categories)):
             v = tk.BooleanVar(value=True)
             cb = tk.Checkbutton(self, variable=v, text=categories[i].title(), width=15, anchor=tk.W, 
@@ -160,31 +156,6 @@ class MenuFrame(tk.Frame):
 
         self.check_buttons = check_buttons
         self.check_vars = check_vars
-
-    def create_country_menu(self):
-        self.country_label = tk.Label(self, text="Select Country:", bg=self.bg_color, fg=self.text_color)
-        self.country_label.pack(pady=(20, 5))
-
-        options = [""] + COUNTRY_OPTIONS
-        country_var = tk.StringVar()
-        country_var.set(options[0])
-
-        self.country_menu = ttk.Combobox(self, width=5, textvariable=country_var, values=options)
-        self.country_menu.pack()
-        self.country_var = country_var
-
-    def create_language_menu(self):
-        self.language_label = tk.Label(self, text="Select Language:", bg=self.bg_color, fg=self.text_color)
-        self.language_label.pack(pady=(20, 5))
-
-        options = [""] + LANGUAGE_OPTIONS
-
-        language_var = tk.StringVar()
-        language_var.set(options[0])
-
-        self.language_menu = ttk.Combobox(self, width=5, textvariable=language_var, values=options)
-        self.language_menu.pack()
-        self.language_var = language_var
 
 
 class articleGroup:
@@ -204,9 +175,9 @@ class articleGroup:
         self.wrap_len = wrap_len
 
         # GUI layout
-        thumbnails = False
-        if thumbnails:
+        if True: # TO-DO: Add option to turn off for speed
             self.create_thumbnail()
+            self.wrap_len -= 100
 
         self.create_news_title()
         self.create_description()
@@ -232,7 +203,7 @@ class articleGroup:
 
         # GUI img label
         self.img_label = tk.Label(self.root, image=self.img, bg=self.bg_color)
-        self.img_label.grid(row=self.row, column=0, rowspan=5, sticky='nsew')
+        self.img_label.grid(row=self.row, column=0, rowspan=5, sticky='n')
         self.img_label.image = self.img
 
     def create_news_title(self):
@@ -313,6 +284,7 @@ class articleGroup:
         socials_text = "Socials: "
 
         socials = [s for s in socials if s]
+        socials = set(socials)
         if len(socials) > 0:
             socials_text += ", ".join(socials)
         self.socials = tk.Label(self.root, text=socials_text, anchor=tk.W, justify=tk.LEFT, bg=self.bg_color)
@@ -322,12 +294,13 @@ class articleGroup:
         keywords = getattr(scraped_content, 'keywords', None)
         keywords_text = "Keywords: "
         if isinstance(keywords, list):
+            keywords = set(keywords)
             keywords_text += ", ".join(keywords)
         elif isinstance(keywords, str):
             keywords_text += keywords
 
         if len(keywords_text) > 60:
-            keywords_text = keywords_text[:-3] + "..."
+            keywords_text = keywords_text[:57] + "..."
 
         self.keywords = tk.Label(self.root, text=keywords_text, anchor=tk.W, justify=tk.LEFT, bg=self.bg_color)
         self.keywords.grid(row=self.row+3, column=2, sticky='nsew')
@@ -337,180 +310,6 @@ class articleGroup:
         self.ads_label = tk.Label(self.root, text=f"Ads: {ads}", anchor=tk.W, justify=tk.LEFT, bg=self.bg_color)
         self.ads_label.grid(row=self.row+3, column=3, sticky='nsew')
         self.ads_count = ads
-
-
-class GraphFrame:
-    def __init__(self, root, bg_color, text_color, data):
-        self.root = root
-        self.bg_color = bg_color
-        self.text_color = text_color
-        self.stats = None
-        self.stats_count = None
-        self.stats_len = None
-        self.plots = {}
-        self.labels = {}
-
-        # Create subfolder if required
-        if not os.path.exists("images"):
-            os.mkdir("images")
-        else:
-            # Clear existing files 
-            for f in os.listdir("images"):
-                os.remove(f"images/{f}")
-        
-        # Data wrangling
-        self.summarise_data(data)
-
-        # Create plots and save pngs
-        self.create_vbar_plot(
-            df=self.stats_count,
-            x="Count", y="Source",
-            mean=self.stats.groupby("Source")["Length"].count().mean(),
-            name="fig_source_count.png"
-        )
-        self.create_vbar_plot(
-            df=self.stats_len,
-            x="Length", y="Source",
-            mean=self.stats["Length"].mean(),
-            name="fig_source_length.png"
-        )
-        self.create_line_plot()
-
-        # Display plots
-        filenames = ["fig_source_count.png", "fig_source_length.png", "fig_published_at.png"]
-        for i, filename in enumerate(filenames):
-            self.display_plot(filename, counter=i)
-
-    def summarise_data(self, data):
-        stats = []
-        for article in data:
-            # Get source name and article length
-            source = article["source"]["name"]
-            length = self.get_article_length(article.get('content', ''))
-            published = article.get("publishedAt", None)
-
-            stats.append([source, length, published])
-
-        # Store stats
-        df = pd.DataFrame(stats, columns=["Source", "Length", "Published"])
-        self.stats = df
-
-        # Run other aggregations 
-        self.summarise_counts()
-        self.summarise_lengths()
-
-    def summarise_counts(self):
-        # Get counts by soure
-        df = self.stats.groupby("Source", as_index=False)["Length"].count()
-        df.columns = ["Source", "Count"]
-
-        # Get top 10 (if available)
-        n = min(10, len(df))
-        self.stats_count = df.sort_values("Count", ascending=False).head(n)
-
-    def summarise_lengths(self):
-        df = self.stats.copy()
-        
-        # Mark top 10
-        sources = self.stats_count["Source"].tolist()
-        df["Top"] = True
-        df.loc[~df["Source"].isin(sources), "Top"] = False
-        df.loc[~df["Top"], "Source"] = "Other"
-
-        # Get average article length per source
-        df = df.groupby("Source", as_index=False)["Length"].mean()
-        df.sort_values("Length", ascending=False, inplace=True)
-
-        self.stats_len = df
-
-    def get_article_length(self, content):
-        # Find char counter at end of content
-        pattern = r"\[\+\d+\s+\w+\]"
-
-        p = re.compile(pattern)
-        try:
-            match = p.search(content)
-        except:
-            match = None
-
-        if match:
-            # Extract number from char counter
-            extra_tag = match.group(0)
-            extra_count = re.findall(r"\d+", extra_tag)
-            extra_count = int(extra_count[0])
-
-            # Count string portion of content
-            stripped_content = content.replace(extra_tag, "")    
-            stripped_content = re.sub(r"\u2026", '', stripped_content)
-            content_count = len(stripped_content)
-
-        else:
-            extra_count = 0
-            try:
-                content_count = len(content)
-            except:
-                content_count = 0
-
-        return content_count + extra_count
-    
-    def create_vbar_plot(self, df, x, y, mean, name):
-        # Create color map
-        color_map = {source: "#018ADA" for source in df["Source"].unique()}
-        color_map["Other"] = "#A5A4AC"
-
-        # Customise titles
-        if name == "fig_source_count.png":
-            title = "Top Sources"
-            x_title = "Articles"
-        else:
-            title = "Article Length"
-            x_title = "Words (Avg.)"
-
-        # Plot
-        fig = px.bar(df, x=x, y=y, color=y, orientation="h", 
-                    color_discrete_map=color_map, title=title,
-                    width=400, height=350, template="plotly_dark")
-        
-        # Formatting
-        # Mean should be weighted average across all before the top 10 splits
-        fig.add_vline(x=mean, line_color="#9D0620", line_dash="dot")
-        fig.update_layout(showlegend=False, margin=dict(l=20, r=20, t=40, b=20), 
-                          xaxis_title=x_title, yaxis_title=None)
-        fig.write_image(f"images/{name}")
-
-    def create_line_plot(self):
-        # Remove problematic items
-        df = self.stats.copy()
-        df = df.loc[df["Source"] != '[Removed]']
-        df = df.loc[df["Published"].notnull()]
-
-        # Date formatting for charts
-        df["Published"] = pd.to_datetime(df['Published'], format='mixed')
-        df["Date"] = df['Published'].dt.date
-        df = df.groupby('Date', as_index=False)["Length"].count()
-        
-        # Plotting
-        fig = px.line(df, x='Date', y='Length', 
-                      title="Published Time", 
-                      width=800, height=350, template='plotly_dark')
-        
-        fig.update_layout(showlegend=False, margin=dict(l=20, r=20, t=40, b=20),
-                          yaxis_title=None, xaxis_title=None)
-        fig.write_image("images/fig_published_at.png")
-
-    def display_plot(self, filename, counter):
-        if os.path.isfile(f"images/{filename}"):
-            # Load image
-            img = Image.open(f"images/{filename}")
-            self.plots[counter] = ImageTk.PhotoImage(img)
-
-            # GUI img label
-            row = counter // 2
-            col = counter % 2
-            colspan = 2 if counter == 2 else 1
-            self.labels[counter] = tk.Label(self.root, image=self.plots[counter], bg=self.bg_color)
-            self.labels[counter].grid(row=row, column=col, columnspan=colspan, sticky='nsew')
-            self.labels[counter].image = self.plots[counter]
 
 
 class ContentFrame(tk.Frame):
@@ -683,7 +482,9 @@ class ContentFrame(tk.Frame):
                     self.analytics_content, 
                     bg_color="#FFF1C8", 
                     text_color="#000000",
-                    data=self.root.downloaded_results
+                    data=self.root.downloaded_results,
+                    width=800,
+                    height=700
                 )
 
             self.analytics_content.pack(in_=self.display)
@@ -711,19 +512,19 @@ class ContentFrame(tk.Frame):
 
         
 class MainApp:
-    __api_key = ""
+    # __api_key = ""
 
     def __init__(self, root):
         self.root = root
         
         width = 1200
-        height = 830
+        height = 900
         self.root.geometry(f"{width}x{height}+0+0")
         self.root.title("News Aggregator")
         self.root.news = None
         self.root.downloaded_results = None
         self.root.page_len = 5
-
+        
         # Status bar (bottom bar)
         self.root.statusbar = StatusBar(root)
         self.root.statusbar.pack(side=tk.BOTTOM, fill=tk.X)
@@ -738,6 +539,7 @@ class MainApp:
 
         # Content (right frame)
         content_width = width - menu_width
+        
         self.right_frame = ContentFrame(root, bg_color="#FFF1C8", text_color="#000000", width=content_width)
         self.right_frame.pack_propagate(False)
 
@@ -754,24 +556,6 @@ class MainApp:
         else:
             selected_categories = [category for category, selected in zip(CATEGORY_OPTIONS, options) if selected]
             self.left_frame.selected_categories = selected_categories
-
-    def update_combobox_selection(self, event):
-        country_var = self.left_frame.country_menu.option_var.get()
-        # self.country_label.config(text=f"Country: {country_var}")
-
-        language_var = self.left_frame.language_menu.option_var.get()
-        # self.language_label.config(text=f"Language: {language_var}")
-
-    def date_check(self, date_string):
-        # Ensure date is in format acceptable for API
-        try:
-            formatted_date = datetime.datetime.strptime(date_string, '%Y-%m-%d')
-            if formatted_date <= datetime.datetime.now():
-                return True
-            else:
-                return False
-        except ValueError:
-            return False
         
     def params_check(self):
         # Check which params are entered
@@ -890,61 +674,6 @@ class MainApp:
 
         self.right_frame.analytics_content = None
         self.right_frame.show_content = True
-
-    # def display_results(self):
-    #     self.display = {}
-    #     self.image = {}
-    #     self.text = {}
-    #     count = 0
-
-    #     #for article in self.downloaded_results["articles"][:10]:
-    #     articles = [
-    #         {'source': {'id': None, 'name': '[Removed]'}, 'author': None, 'title': '[Removed]', 'description': '[Removed]', 'url': 'https://removed.com', 'urlToImage': None, 'publishedAt': '1970-01-01T00:00:00Z', 'content': '[Removed]'}, 
-    #         {'source': {'id': 'bbc-sport', 'name': 'BBC Sport'}, 'author': None, 'title': 'NBA play-offs: Tyrese Haliburton leads Indiana Pacers to win over Milwaukee Bucks', 'description': 'Tyrese Haliburton converts a three-point play with 1.6 seconds left in overtime to give the Indiana Pacers a 2-1 lead over the Milwaukee Bucks in their Eastern Conference first-round play-off series.', 'url': 'http://www.bbc.co.uk/sport/basketball/articles/cg30zl29mzlo', 'urlToImage': 'https://ichef.bbci.co.uk/news/1024/branded_sport/7f48/live/1c411940-045e-11ef-b9d8-4f52aebe147d.jpg', 'publishedAt': '2024-04-27T07:52:13.3513784Z', 'content': 'Tyrese Haliburton converted a three-point play with 1.6 seconds left in overtime to give the Indiana Pacers a 2-1 lead over the Milwaukee Bucks in their Eastern Conference first-round play-off series… [+864 chars]'}, 
-    #         {'source': {'id': 'cbs-news', 'name': 'CBS News'}, 'author': 'Meredith Gordon', 'title': 'How to watch the Cleveland Cavaliers vs. Orlando Magic NBA Playoffs game tonight: Game 4 livestream options, more', 'description': "Find out how and when to watch Game 4 of the Cavaliers vs. Magic NBA Playoffs series, even if you don't have cable.", 'url': 'https://www.cbsnews.com/essentials/how-to-watch-todays-cavaliers-vs-magic-nba-playoffs-game-game-4-livestream-options-start-time-and-more/', 'urlToImage': 'https://assets3.cbsnewsstatic.com/hub/i/r/2024/04/26/6570261c-23f8-4c32-8417-2cfd5148e080/thumbnail/1200x630/98546cb5680e0d153001f7a7148851d3/gettyimages-2150246951-1.jpg?v=63c131a0051f3823d92b0d1dffb5e0e4', 'publishedAt': '2024-04-27T05:06:47+00:00', 'content': 'Darius Garland #10 of the Cleveland Cavaliers dribbles the ball against Paolo Banchero #5 of the Orlando Magic during the third quarter of game three of the Eastern Conference First Round Playoffs at… [+8406 chars]'}, 
-    #         {'source': {'id': 'cbs-news', 'name': 'CBS News'}, 'author': 'Meredith Gordon', 'title': 'How to watch the Denver Nuggets vs. Los Angeles Lakers NBA Playoffs game tonight: Game 4 livestream options, more', 'description': "Here's how and when to watch Game 4 of the Denver Nuggets vs. Los Angeles Lakers NBA Playoffs series.", 'url': 'https://www.cbsnews.com/essentials/how-to-watch-tonights-denver-nuggets-vs-los-angeles-lakers-game-4/', 'urlToImage': 'https://assets3.cbsnewsstatic.com/hub/i/r/2024/04/26/0d01dd18-1c25-4fcb-9c8d-1b080342a800/thumbnail/1200x630/3d5ceb8e0d7954dbedd2664d016fbfbf/gettyimages-2150339085-1.jpg?v=63c131a0051f3823d92b0d1dffb5e0e4', 'publishedAt': '2024-04-27T04:59:00+00:00', 'content': 'Nikola Jokic #15 of the Denver Nuggets during game three of the Western Conference First Round Playoffs at Crypto.com Arena on April 25, 2024 in Los Angeles, California.\r\nRonald Martinez/Getty Images… [+10776 chars]'}, 
-    #         {'source': {'id': 'cbs-news', 'name': 'CBS News'}, 'author': 'Meredith Gordon', 'title': 'How to watch the Boston Celtics vs. Miami Heat NBA Playoffs game tonight: Game 3 livestream options, start time, more', 'description': "Game 3 of the Celtics vs. Heat NBA Playoffs series is can't-miss basketball. Here's how and when to watch tonight.", 'url': 'https://www.cbsnews.com/essentials/how-to-watch-tonights-boston-celtics-vs-miami-heat-nba-playoffs-game-3/', 'urlToImage': 'https://assets1.cbsnewsstatic.com/hub/i/r/2024/04/26/09ef6820-2df5-4120-96f9-5d8884a6543e/thumbnail/1200x630/6d15d84003a1d8c8726ff8e1dfb5501b/gettyimages-2149460985-1.jpg?v=63c131a0051f3823d92b0d1dffb5e0e4', 'publishedAt': '2024-04-27T04:47:00+00:00', 'content': 'Tyler Herro #14 of the Miami Heat looks at his bench after making a three-point basket against the Boston Celtics during the second quarter of game two of the Eastern Conference First Round Playoffs … [+8404 chars]'}, 
-    #         {'source': {'id': 'cbs-news', 'name': 'CBS News'}, 'author': 'Meredith Gordon', 'title': 'How to watch the OKC Thunder vs. New Orleans Pelicans NBA Playoffs game tonight: Game 3 livestream options, more', 'description': "Here's how and when to watch Game 3 of the OKC Thunder vs. New Orleans Pelicans NBA Playoffs series.", 'url': 'https://www.cbsnews.com/essentials/how-to-watch-todays-okc-thunder-vs-new-orleans-pelicans-nba-playoffs-game-3/', 'urlToImage': 'https://assets3.cbsnewsstatic.com/hub/i/r/2024/04/26/85e98138-3298-4ec7-a1a7-e5030b12aa2d/thumbnail/1200x630/a5861ab2092c404f418cfb7687dd2d1c/gettyimages-2150073262-1.jpg?v=63c131a0051f3823d92b0d1dffb5e0e4', 'publishedAt': '2024-04-27T04:10:19+00:00', 'content': 'Oklahoma City Thunder players react from the bench after a three-pointer during game two of the first round of the NBA playoffs against the New Orleans Pelicans at Paycom Center on April 24, 2024 in … [+8574 chars]'}, 
-    #         {'source': {'id': 'abc-news-au', 'name': 'ABC News (AU)'}, 'author': 'ABC News', 'title': "Joel Embiid fights Bell's palsy to drop NBA playoff career high as Sixers down Knicks", 'description': 'Philadelphia 76ers star Joel Embiid went to the doctors complaining of a migraine prior to the playoffs, only for the diagnosis to be something more sinister that impacts how he looks on the court.', 'url': 'https://www.abc.net.au/news/2024-04-26/nba-playoffs-joel-embiid-bells-palsy-sixers-knicks-game-3/103773714', 'urlToImage': 'https://live-production.wcms.abc-cdn.net.au/d8406c6fa93bfc53f1dd55f9976d5d2a?impolicy=wcms_watermark_news&cropH=2531&cropW=4500&xPos=0&yPos=338&width=862&height=485&imformat=generic', 'publishedAt': '2024-04-26T05:28:24Z', 'content': "<ul><li>In short:\xa0Joel Embiid has been diagnosed with Bell's palsy, a form of facial paralysis, after initially complaining of migraines prior to the NBA playoffs.</li><li>Embiid battled through the … [+2061 chars]"},
-    #     ]
-    #     for article in articles:
-    #         if article['source']['name'] != '[Removed]':
-
-    #             url = article.get("urlToImage", None)
-    #             u = requests.get(url)
-    #             img = Image.open(io.BytesIO(u.content))
-    #             img = img.resize((128, 128))
-    #             self.image[f"article_{count}"] = ImageTk.PhotoImage(img)
-
-    #             # with urlopen(url) as u:
-    #             #     raw_data = u.content
-    #             #     image = Image.open(io.BytesIO(raw_data))
-    #             #     img = ImageTk.PhotoImage(image)
-
-    #             self.display[f"article_{count}"] = tk.Label(
-    #                 self.right_frame,
-    #                 # text=article.get("urlToImage", None),
-    #                 image=self.image[f"article_{count}"],
-    #                 width=100,
-    #                 height=100,
-    #                 anchor="w",
-    #                 # justify="left",
-    #                 # width=100,
-    #                 # wraplength=700
-    #             )
-    #             self.display[f"article_{count}"].pack(side=tk.LEFT, pady=(10, 5))
-    #             self.text[f"article_{count}"] = tk.Label(
-    #                 self.right_frame,
-    #                 text=article.get("title", None),
-    #                 width=100,
-    #                 # justify="left",
-    #                 # width=100,
-    #                 # wraplength=700
-    #             )
-    #             self.text[f"article_{count}"].pack(side=tk.RIGHT)
-
-    #             #self.display[f"article_{count}"].config(image=image, width=image.width(), height=image.height())
-    #             count += 1
 
 def main():
     root = tk.Tk()

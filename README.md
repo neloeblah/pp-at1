@@ -68,8 +68,9 @@ pp-at1/
 ├── app.py                    # Main application file
 ├── newsapi.py                # News API interaction code
 ├── scraper.py                # Web scraping code
-├── pyproject.txt             # Project dependencies
+├── graph.py                  # Data visualisation code
 ├── README.md                 # Project documentation
+├── pyproject.txt             # Project dependencies
 ├── __init__.py               # Initialize the package
 ├── tests/                    # Test suite
 │   ├── test_news.py          # Tests for news API interactions
