@@ -284,6 +284,7 @@ class articleGroup:
         socials_text = "Socials: "
 
         socials = [s for s in socials if s]
+        socials = set(socials)
         if len(socials) > 0:
             socials_text += ", ".join(socials)
         self.socials = tk.Label(self.root, text=socials_text, anchor=tk.W, justify=tk.LEFT, bg=self.bg_color)
@@ -293,12 +294,13 @@ class articleGroup:
         keywords = getattr(scraped_content, 'keywords', None)
         keywords_text = "Keywords: "
         if isinstance(keywords, list):
+            keywords = set(keywords)
             keywords_text += ", ".join(keywords)
         elif isinstance(keywords, str):
             keywords_text += keywords
 
         if len(keywords_text) > 60:
-            keywords_text = keywords_text[:-3] + "..."
+            keywords_text = keywords_text[:57] + "..."
 
         self.keywords = tk.Label(self.root, text=keywords_text, anchor=tk.W, justify=tk.LEFT, bg=self.bg_color)
         self.keywords.grid(row=self.row+3, column=2, sticky='nsew')
